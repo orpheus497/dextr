@@ -68,7 +68,7 @@ Your Files/Folders ──► 1. Archive Creation (.tar.xz using LZMA)
       │         ▲                ▲          │     │
       │         │                │          ▼     │
       │   ┌────────────┐   ┌────────────┐   │     │
-      └───┤   AES-GCM  │◄───┤  ChaCha20  │◄──┘     │
+      └───┤   AES-GCM  │◄───┤  ChaCha20  │◄──┘    │
           └────────────┘   └────────────┘         │
       └───────────────────────────────────────────┘
                            │
@@ -261,6 +261,4 @@ dextr info --key dextrkey.dxk
 - **Core Cryptography**: The [cryptography](https://github.com/pyca/cryptography) library, which is licensed under the dual Apache-2.0 and BSD licenses.
 
 This project is provided as-is. While it is built with modern, secure cryptographic primitives, no warranty is provided. Always maintain backups of your original data.
-# dextr
-# dextr
 # dextr
