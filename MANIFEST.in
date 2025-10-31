@@ -1,0 +1,7 @@
+# dextr - Secure Archiving & Encryption System
+
+include README.md
+include CHANGELOG.md
+include requirements.txt
+include LICENSE
+recursive-include dextr *.py
