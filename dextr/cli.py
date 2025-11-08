@@ -181,7 +181,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
             strength = get_password_strength(password)
             print(f"Password strength: {strength['strength']} (score: {strength['score']}/100)")
             if strength["strength"] == "weak":
-                print("⚠️  Warning: Consider using a stronger password")
+                print("WARNING: Consider using a stronger password")
         except KeyManagementError as e:
             error_exit(str(e))
     elif getattr(args, "password_file", None):
@@ -200,11 +200,11 @@ def cmd_generate(args: argparse.Namespace) -> int:
             print("  Protection: Password-protected")
         print()
         print(
-            "⚠️  IMPORTANT: Back up this key file securely. "
+            "IMPORTANT: Back up this key file securely. "
             "Without it, your encrypted data cannot be recovered."
         )
         if password:
-            print("⚠️  IMPORTANT: Remember your password. Without it, the key file cannot be used.")
+            print("IMPORTANT: Remember your password. Without it, the key file cannot be used.")
         return 0
     except KeyManagementError as e:
         error_exit(str(e))
@@ -410,7 +410,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(f"  Encrypted Data Size: {format_bytes(info['encrypted_size'])}")
         print(f"  Salt: {info['salt'][:32]}...")
         print()
-        print("✓ Archive structure is valid")
+        print("[OK] Archive structure is valid")
 
         return 0
 
@@ -528,23 +528,23 @@ def cmd_check(args: argparse.Namespace) -> int:
         # Display results
         print(f"\nIntegrity Check Results for '{input_path}':")
         print("-" * 60)
-        print(f"  Header Valid:           {'✓ Yes' if result['header_valid'] else '✗ No'}")
-        print(f"  Key Match:              {'✓ Yes' if result['key_match'] else '✗ No'}")
-        print(f"  Decryption Success:     {'✓ Yes' if result['decrypt_success'] else '✗ No'}")
+        print(f"  Header Valid:           {'[YES]' if result['header_valid'] else '[NO]'}")
+        print(f"  Key Match:              {'[YES]' if result['key_match'] else '[NO]'}")
+        print(f"  Decryption Success:     {'[YES]' if result['decrypt_success'] else '[NO]'}")
 
         if not quick:
             print(
-                f"  Full Decrypt Success:   {'✓ Yes' if result['full_decrypt_success'] else '✗ No'}"
+                f"  Full Decrypt Success:   {'[YES]' if result['full_decrypt_success'] else '[NO]'}"
             )
 
         print("-" * 60)
 
         if result["valid"]:
-            print("✓ Archive integrity check PASSED")
+            print("[PASS] Archive integrity check PASSED")
             print("\nThe archive appears to be valid and can be decrypted with this key.")
             return 0
         else:
-            print("✗ Archive integrity check FAILED")
+            print("[FAIL] Archive integrity check FAILED")
             if result.get("error"):
                 print(f"\nError: {result['error']}")
             return 1
@@ -588,11 +588,11 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  • Key ID Verification: Wrong key detected immediately")
         print()
         print("Best Practices:")
-        print("  ✓ Back up key files in multiple secure locations")
-        print("  ✓ Keep keys separate from encrypted data")
-        print("  ✓ Use different keys for different purposes")
-        print("  ✓ Test decryption after encryption")
-        print("  ✓ Protect key files like passwords")
+        print("  * Back up key files in multiple secure locations")
+        print("  * Keep keys separate from encrypted data")
+        print("  * Use different keys for different purposes")
+        print("  * Test decryption after encryption")
+        print("  * Protect key files like passwords")
         print()
 
     elif topic == "workflow":
