@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Shell Completion Scripts:** Bash, Zsh, and Fish completion scripts for improved CLI usability with tab completion for commands, options, and file paths
+- **Pre-commit Hooks Configuration:** Automated code quality checks using black, isort, flake8, mypy, and bandit before commits
+- **Version Consistency Checker:** Python script to verify version consistency across all project files before releases
+
+### Changed
+- **Version Display:** Updated README.md banner to display version 1.3.0
+- **Python Version Requirement:** Standardized minimum Python version to 3.8 across all files (README.md, setup.py, pyproject.toml)
+- **Cryptography Dependency:** Standardized cryptography dependency to >=42.0.0 across requirements.txt and pyproject.toml
+- **CLI Banner:** Implemented dynamic version spacing in banner display to handle any version string length
+- **FOSS Attribution:** Added complete attribution for tqdm and tomli libraries to LICENSE and README.md Credits section
+- **Experimental Module Warning:** Added explicit deprecation warning to experimental/streaming.py module with detailed status documentation
+
+### Fixed
+- **Documentation Consistency:** Corrected version references throughout documentation
+- **Dependency Versioning:** Resolved version inconsistencies between setup.py, requirements.txt, and pyproject.toml
+- **MANIFEST.in:** Added explicit exclusion of .dev-docs directory from distribution packages
+- **Python 3.7 Classifier:** Removed Python 3.7 from setup.py classifiers to match actual minimum requirement of Python 3.8
+
 ## [1.3.0] - 2025-11-08
 
 ### Added

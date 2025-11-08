@@ -58,9 +58,14 @@ def format_bytes(size: int) -> str:
 
 
 def print_banner() -> None:
-    """Print the application banner."""
+    """Print the application banner with dynamic version spacing."""
+    version_text = f"D E X T R  v{__version__}"
+    # Banner width is 50 chars inside the box (48 + 2 for padding)
+    # Center the version text
+    version_line = version_text.center(48)
+
     print("╔══════════════════════════════════════════════════╗")
-    print(f"║              D E X T R  v{__version__}                   ║")
+    print(f"║{version_line}║")
     print("║      Secure Archiving & Encryption System        ║")
     print("║            Created by orpheus497                 ║")
     print("╚══════════════════════════════════════════════════╝")

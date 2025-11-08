@@ -1,25 +1,46 @@
 """
-dextr/streaming.py
+dextr/experimental/streaming.py
 
-Streaming encryption and decryption implementation for the dextr application.
-Provides memory-efficient processing of large files through chunked operations.
+EXPERIMENTAL - NOT FOR PRODUCTION USE
+=====================================
 
-**EXPERIMENTAL MODULE - NOT YET PRODUCTION-READY**
+This module contains incomplete streaming implementations for processing
+large archives. It is currently DEPRECATED and should not be used.
 
-This module is under active development and is not currently used by the main
-dextr application. The streaming decryption implementation (stream_decrypt_layer)
-requires optimization before it can be used in production.
+**Status:** Incomplete and Deprecated
+**Security:** May contain vulnerabilities
+**Future:** May be completed in version 2.0 or removed
 
-TODO: Complete and optimize stream_decrypt_layer chunk boundary detection
-TODO: Integrate streaming mode into core.py for large file support
-TODO: Add comprehensive tests for streaming operations
-TODO: Benchmark and optimize performance
+CRITICAL WARNINGS:
+- This module has incomplete implementations
+- It may contain security vulnerabilities
+- It has not been thoroughly tested
+- Path traversal protection (B202) was addressed but module remains incomplete
+- DO NOT USE THIS MODULE IN PRODUCTION CODE
 
-For now, use the standard (non-streaming) encrypt_paths() and decrypt_archive()
-functions from dextr.core for all operations.
+For production use, always use the standard (non-streaming) functions:
+- dextr.core.encrypt_paths()
+- dextr.core.decrypt_archive()
+
+TODO (for future versions):
+- Complete and optimize stream_decrypt_layer chunk boundary detection
+- Implement comprehensive path validation and security checks
+- Add extensive test coverage
+- Conduct security audit
+- Benchmark and optimize performance
+- Integrate with core.py if deemed production-ready
 """
 
 import os
+import warnings
+
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "dextr.experimental.streaming module is incomplete and deprecated. "
+    "Do not use in production. Use dextr.core functions instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 import tarfile
 import tempfile
 import zlib
