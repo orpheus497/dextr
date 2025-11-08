@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Package API Exports:** Implemented `dextr/__init__.py` module with public API exports including version metadata, core functions (generate_key_file, load_key_file, encrypt_paths, decrypt_archive), custom exceptions, and format constants. This allows importing dextr functionality programmatically via `from dextr import ...` in addition to CLI usage.
+
 ## [1.0.0] - 2025-11-01
 
 ### Added
