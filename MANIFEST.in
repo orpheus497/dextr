@@ -2,6 +2,13 @@
 
 include README.md
 include CHANGELOG.md
+include GETTING_STARTED.md
+include USAGE.md
+include SECURITY.md
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
 include requirements.txt
+include requirements-dev.txt
 include LICENSE
 recursive-include dextr *.py
+exclude .dev-docs
