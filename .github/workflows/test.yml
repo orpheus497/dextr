@@ -1,0 +1,98 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Run tests with pytest
+        run: |
+          pytest -v --cov=dextr --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Test CLI commands
+        shell: bash
+        run: |
+          # Generate key
+          python -m dextr generate test_key.dxk --force
+
+          # Create test file
+          echo "Test content" > test_file.txt
+
+          # Encrypt
+          python -m dextr encrypt -k test_key.dxk -i test_file.txt -o test.dxe --force
+
+          # Verify archive exists
+          if [ ! -f test.dxe ]; then
+            echo "Encryption failed: test.dxe not created"
+            exit 1
+          fi
+
+          # Decrypt
+          python -m dextr decrypt -k test_key.dxk -i test.dxe -o restored --force
+
+          # Verify restored file
+          if [ ! -f restored/test_file.txt ]; then
+            echo "Decryption failed: file not restored"
+            exit 1
+          fi
+
+          # Check archive integrity
+          python -m dextr check -k test_key.dxk -i test.dxe
+
+          echo "CLI tests passed!"
+
+      - name: Test password-protected keys
+        shell: bash
+        run: |
+          # Create password file
+          echo "TestPassword123!" > pw.txt
+
+          # Generate password-protected key
+          python -m dextr generate pw_key.dxk --password-file pw.txt --force
+
+          # Create test file
+          echo "Password protected test" > pw_test.txt
+
+          # Encrypt with password-protected key
+          python -m dextr encrypt -k pw_key.dxk --password-file pw.txt -i pw_test.txt -o pw_test.dxe --force
+
+          # Decrypt with password-protected key
+          python -m dextr decrypt -k pw_key.dxk --password-file pw.txt -i pw_test.dxe -o pw_restored --force
+
+          echo "Password-protected key tests passed!"

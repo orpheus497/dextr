@@ -1,15 +1,15 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "cryptography>=41.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "dextr"
-version = "1.2.0"
+version = "1.3.0"
 description = "Secure archiving and encryption system with multi-layer AEAD protection"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "orpheus497"}]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -18,7 +18,6 @@ classifiers = [
     "Topic :: System :: Archiving :: Backup",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -32,15 +31,19 @@ keywords = ["encryption", "cryptography", "backup", "security", "archiving", "ae
 dependencies = [
     "cryptography>=42.0.0",
     "tqdm>=4.66.0",
+    "tomli>=2.0.0; python_version<'3.11'",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
+    "coverage>=7.0.0",
     "black>=23.0.0",
     "mypy>=1.5.0",
     "flake8>=6.1.0",
+    "bandit>=1.7.0",
+    "safety>=2.3.0",
     "sphinx>=7.0.0",
     "sphinx-rtd-theme>=1.3.0",
 ]
@@ -55,7 +58,7 @@ Issues = "https://github.com/orpheus497/dextr/issues"
 
 [tool.black]
 line-length = 100
-target-version = ["py37", "py38", "py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311", "py312"]
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -72,7 +75,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -133,3 +136,12 @@ exclude = [
     ".tox",
     ".venv",
 ]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true

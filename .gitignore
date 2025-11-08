@@ -57,9 +57,16 @@ tmp_*
 # Test artifacts
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage.xml
 tests/fixtures/*.dxe
 examples/test_data/*.dxe
+
+# Documentation build
+docs/build/
+docs/_build/
+docs/source/_build/
 
 # Local configuration
 .local/
