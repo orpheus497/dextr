@@ -27,16 +27,10 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple, Optional, Callable
 from pathlib import Path
 
-try:
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
-    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.exceptions import InvalidTag
-except ImportError:
-    raise ImportError(
-        "The 'cryptography' library is not installed. "
-        "Please install it with: pip install cryptography"
-    )
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import InvalidTag
 
 from dextr.exceptions import (
     DextrError,

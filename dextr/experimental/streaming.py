@@ -27,14 +27,8 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Callable, BinaryIO, Iterator, List
 
-try:
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
-    from cryptography.exceptions import InvalidTag
-except ImportError:
-    raise ImportError(
-        "The 'cryptography' library is not installed. "
-        "Please install it with: pip install cryptography"
-    )
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
+from cryptography.exceptions import InvalidTag
 
 from dextr.logging_config import get_logger
 from dextr.validation import sanitize_archive_member
