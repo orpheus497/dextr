@@ -7,7 +7,7 @@ Supports loading configuration from TOML files with cascading defaults.
 
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 try:
     # Python 3.11+

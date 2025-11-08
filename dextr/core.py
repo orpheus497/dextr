@@ -14,55 +14,54 @@ Security features:
 - Atomic file operations
 """
 
-import os
-import json
-import zlib
-import struct
 import getpass
 import hashlib
+import json
+import os
 import shutil
+import struct
 import tarfile
 import tempfile
+import zlib
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Tuple, Optional, Callable
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from dextr.exceptions import (
-    DextrError,
-    KeyManagementError,
     ArchivingError,
-    EncryptionError,
     DecryptionError,
+    DextrError,
+    EncryptionError,
+    KeyManagementError,
     ValidationError,
 )
-from dextr.validation import (
-    validate_path,
-    validate_input_paths,
-    validate_key_file,
-    validate_archive_file,
-    validate_output_path,
-    sanitize_archive_member,
-    enforce_key_file_permissions,
-    check_archive_size,
+from dextr.key_protection import (
+    decrypt_key_with_password,
+    encrypt_key_with_password,
+    is_password_protected,
 )
 from dextr.logging_config import (
     get_logger,
-    log_security_event,
-    log_operation_start,
     log_operation_complete,
     log_operation_error,
+    log_operation_start,
+    log_security_event,
 )
-from dextr.key_protection import (
-    encrypt_key_with_password,
-    decrypt_key_with_password,
-    is_password_protected,
+from dextr.validation import (
+    check_archive_size,
+    enforce_key_file_permissions,
+    sanitize_archive_member,
+    validate_archive_file,
+    validate_input_paths,
+    validate_key_file,
+    validate_output_path,
+    validate_path,
 )
-
 
 # Get logger for this module
 logger = get_logger(__name__)

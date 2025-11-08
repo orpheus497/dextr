@@ -9,18 +9,18 @@ This module allows users to encrypt their master key files with a password for
 additional security when storing keys.
 """
 
-import os
-import json
 import getpass
 import hashlib
-from typing import Dict, Any, Optional, Tuple
+import json
+import os
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 try:
+    from cryptography.exceptions import InvalidTag
+    from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.exceptions import InvalidTag
 except ImportError:
     raise ImportError(
         "The 'cryptography' library is not installed. "
@@ -28,7 +28,6 @@ except ImportError:
     )
 
 from dextr.exceptions import KeyManagementError
-
 
 # Constants
 PASSWORD_PROTECTED_MAGIC = "DEXTR_KEY_PROTECTED"

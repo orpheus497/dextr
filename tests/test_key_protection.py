@@ -5,23 +5,19 @@ Tests for password-based key file protection.
 Tests password encryption, decryption, strength evaluation, and error handling.
 """
 
-import pytest
 from pathlib import Path
 
-from dextr import (
-    generate_key_file,
-    load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-)
+import pytest
+
+from dextr import decrypt_archive, encrypt_paths, generate_key_file, load_key_file
+from dextr.exceptions import KeyManagementError
 from dextr.key_protection import (
-    encrypt_key_with_password,
     decrypt_key_with_password,
+    encrypt_key_with_password,
+    get_password_strength,
     is_password_protected,
     read_password_from_file,
-    get_password_strength,
 )
-from dextr.exceptions import KeyManagementError
 
 
 class TestPasswordProtection:

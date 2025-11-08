@@ -5,26 +5,21 @@ Core functionality tests for dextr encryption and decryption.
 Tests key generation, encryption/decryption roundtrips, and archive operations.
 """
 
-import pytest
 import os
 from pathlib import Path
 
-from dextr import (
-    generate_key_file,
-    load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-    get_archive_info,
-    check_archive_integrity,
-)
-from dextr.exceptions import (
-    KeyManagementError,
-    EncryptionError,
-    DecryptionError,
-    ValidationError,
-)
+import pytest
 
-from tests.conftest import assert_files_equal, assert_directories_equal
+from dextr import (
+    check_archive_integrity,
+    decrypt_archive,
+    encrypt_paths,
+    generate_key_file,
+    get_archive_info,
+    load_key_file,
+)
+from dextr.exceptions import DecryptionError, EncryptionError, KeyManagementError, ValidationError
+from tests.conftest import assert_directories_equal, assert_files_equal
 
 
 class TestKeyGeneration:

@@ -10,7 +10,7 @@ import os
 import stat
 import tarfile
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from dextr.exceptions import ValidationError
 

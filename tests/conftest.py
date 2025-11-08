@@ -6,19 +6,15 @@ Provides reusable test fixtures for keys, archives, and temporary directories.
 """
 
 import os
-import pytest
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
-from typing import Tuple, List
+from typing import List, Tuple
+
+import pytest
 
 # Import dextr modules for testing
-from dextr import (
-    generate_key_file,
-    load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-)
+from dextr import decrypt_archive, encrypt_paths, generate_key_file, load_key_file
 
 
 @pytest.fixture

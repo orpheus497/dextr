@@ -20,20 +20,19 @@ functions from dextr.core for all operations.
 """
 
 import os
-import zlib
 import struct
 import tarfile
 import tempfile
+import zlib
 from pathlib import Path
-from typing import Optional, Callable, BinaryIO, Iterator, List
+from typing import BinaryIO, Callable, Iterator, List, Optional
 
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
 from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
+from dextr.exceptions import ValidationError
 from dextr.logging_config import get_logger
 from dextr.validation import sanitize_archive_member
-from dextr.exceptions import ValidationError
-
 
 logger = get_logger(__name__)
 

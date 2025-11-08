@@ -8,11 +8,11 @@ It calls the core cryptographic engine and presents results to the user.
 Cross-platform compatible: Linux, macOS, Windows, Termux.
 """
 
-import sys
-import os
 import argparse
+import os
+import sys
 from pathlib import Path
-from typing import List, NoReturn, Optional, Any
+from typing import Any, List, NoReturn, Optional
 
 try:
     from tqdm import tqdm
@@ -21,31 +21,26 @@ try:
 except ImportError:
     HAS_TQDM = False
 
-from dextr.version import __version__
+from dextr.config import get_max_archive_size, load_config
 from dextr.core import (
-    generate_key_file,
-    load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-    get_archive_info,
     check_archive_integrity,
+    decrypt_archive,
+    encrypt_paths,
+    generate_key_file,
+    get_archive_info,
+    load_key_file,
 )
 from dextr.exceptions import (
-    DextrError,
-    KeyManagementError,
     ArchivingError,
-    EncryptionError,
     DecryptionError,
+    DextrError,
+    EncryptionError,
+    KeyManagementError,
     ValidationError,
 )
-from dextr.key_protection import (
-    prompt_password,
-    read_password_from_file,
-    get_password_strength,
-)
-from dextr.config import load_config, get_max_archive_size
-from dextr.logging_config import setup_logging, get_logger
-
+from dextr.key_protection import get_password_strength, prompt_password, read_password_from_file
+from dextr.logging_config import get_logger, setup_logging
+from dextr.version import __version__
 
 # Get logger for this module
 logger = get_logger(__name__)

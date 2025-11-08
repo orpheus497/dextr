@@ -34,42 +34,39 @@ from dextr.version import __version__, __version_info__
 __author__ = "orpheus497"
 __license__ = "MIT"
 
-# Import exceptions
-from dextr.exceptions import (
-    DextrError,
-    KeyManagementError,
-    ArchivingError,
-    EncryptionError,
-    DecryptionError,
-    ValidationError,
-)
-
 # Import core functionality
-from dextr.core import (
-    # Key management functions
-    generate_key_file,
-    load_key_file,
-    # Encryption/decryption functions
-    encrypt_paths,
-    decrypt_archive,
-    get_archive_info,
-    check_archive_integrity,
-    # Constants (useful for advanced users)
-    MAGIC_HEADER,
+from dextr.core import (  # Key management functions; Encryption/decryption functions; Constants (useful for advanced users)
     FORMAT_VERSION,
     KEY_FILE_MAGIC,
     KEY_FILE_VERSION,
+    MAGIC_HEADER,
     MASTER_KEY_SIZE,
+    check_archive_integrity,
+    decrypt_archive,
+    encrypt_paths,
+    generate_key_file,
+    get_archive_info,
+    load_key_file,
+)
+
+# Import exceptions
+from dextr.exceptions import (
+    ArchivingError,
+    DecryptionError,
+    DextrError,
+    EncryptionError,
+    KeyManagementError,
+    ValidationError,
 )
 
 # Import password protection utilities
 from dextr.key_protection import (
-    encrypt_key_with_password,
     decrypt_key_with_password,
+    encrypt_key_with_password,
+    get_password_strength,
     is_password_protected,
     prompt_password,
     read_password_from_file,
-    get_password_strength,
 )
 
 # Define public API
