@@ -37,7 +37,7 @@ setup(
         'Intended Audience :: System Administrators',
         'Topic :: Security :: Cryptography',
         'Topic :: System :: Archiving :: Backup',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -49,7 +49,7 @@ setup(
         'Operating System :: OS Independent',
         'Environment :: Console',
     ],
-    keywords='encryption cryptography backup security archiving aead',
+    keywords='encryption cryptography backup security archiving aead library api',
     project_urls={
         'Source': '',
         'Bug Reports': '',

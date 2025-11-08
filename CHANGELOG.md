@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Package API Exports:** Implemented `dextr/__init__.py` module with public API exports including version metadata, core functions (generate_key_file, load_key_file, encrypt_paths, decrypt_archive), custom exceptions, and format constants. This allows importing dextr functionality programmatically via `from dextr import ...` in addition to CLI usage.
+- **Library Documentation:** Added comprehensive Python library usage section to README.md with code examples, function signatures, exception handling patterns, and available constants.
+
+### Changed
+
+- **Core Features:** Updated README.md to include Python Library API as a core feature.
+
+### Fixed
+
+- **License Classification:** Corrected setup.py license classifier from Apache to MIT to match the LICENSE file.
 
 ## [1.0.0] - 2025-11-01
 

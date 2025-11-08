@@ -47,6 +47,7 @@ The installer will:
 - **Five Layers of Defense**: Provides defense-in-depth with a sequence of LZMA archiving, zlib compression, ChaCha20-Poly1305, and AES-256-GCM encryption.
 - **Authenticated Encryption**: Every cryptographic layer is an AEAD (Authenticated Encryption with Associated Data) cipher, which automatically detects tampering, corruption, or authentication failures.
 - **Command-Line Interface**: A clean, scriptable CLI for generating keys, creating encrypted archives, and extracting them.
+- **Python Library API**: Full programmatic access to all encryption functionality for integration into Python applications.
 
 ## 🏗️ Security Architecture
 
@@ -248,6 +249,92 @@ Displays metadata from a key file.
 ```bash
 dextr info --key dextrkey.dxk
 ```
+
+## 🐍 Using dextr as a Python Library
+
+In addition to the command-line interface, dextr can be imported and used programmatically in your Python applications.
+
+### Installation for Library Use
+
+```bash
+pip install .
+# or
+pip install --user .
+```
+
+### Basic Library Usage
+
+```python
+from dextr import (
+    generate_key_file,
+    load_key_file,
+    encrypt_paths,
+    decrypt_archive,
+    DextrError,
+    KeyManagementError,
+    EncryptionError,
+    DecryptionError
+)
+
+# Generate a new key file
+try:
+    metadata = generate_key_file('mykey.dxk')
+    print(f"Created key: {metadata['key_id']}")
+except KeyManagementError as e:
+    print(f"Error: {e}")
+
+# Load an existing key
+master_key, metadata = load_key_file('mykey.dxk')
+print(f"Loaded key created by: {metadata['created_by']}")
+
+# Encrypt files
+try:
+    encrypt_paths(
+        ['document.pdf', 'photos/', 'data.txt'],
+        'backup.dxe',
+        master_key
+    )
+    print("Encryption successful")
+except (ArchivingError, EncryptionError) as e:
+    print(f"Encryption failed: {e}")
+
+# Decrypt archive
+try:
+    decrypt_archive('backup.dxe', 'restored/', master_key)
+    print("Decryption successful")
+except DecryptionError as e:
+    print(f"Decryption failed: {e}")
+```
+
+### Available Functions
+
+- **`generate_key_file(path: str, username: str = None) -> Dict[str, Any]`**
+  Generates a new 512-bit master key and saves it to the specified path.
+
+- **`load_key_file(path: str) -> Tuple[bytes, Dict[str, Any]]`**
+  Loads and validates a key file, returning the master key and metadata.
+
+- **`encrypt_paths(in_paths: List[str], out_path: str, master_key: bytes) -> None`**
+  Encrypts one or more files/directories into a single encrypted archive.
+
+- **`decrypt_archive(in_path: str, out_dir: str, master_key: bytes) -> None`**
+  Decrypts an archive and extracts its contents to a directory.
+
+### Exception Hierarchy
+
+All dextr exceptions inherit from `DextrError`:
+
+- **`KeyManagementError`**: Issues with key file operations
+- **`ArchivingError`**: Problems during file archiving
+- **`EncryptionError`**: Failures during encryption
+- **`DecryptionError`**: Failures during decryption (wrong key, corrupted data, etc.)
+
+### Constants
+
+- **`MAGIC_HEADER`**: Magic bytes for .dxe files (`b'DEXTR'`)
+- **`FORMAT_VERSION`**: Current file format version
+- **`KEY_FILE_MAGIC`**: Magic string for .dxk files
+- **`MASTER_KEY_SIZE`**: Size of master key in bytes (64 = 512 bits)
 
 ## 🛡️ Security Best Practices
 
