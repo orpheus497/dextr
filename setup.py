@@ -5,6 +5,11 @@ Setup script for dextr - Secure Archiving & Encryption System
 
 from setuptools import setup, find_packages
 import os
+import sys
+
+# Add the current directory to the path to import version
+sys.path.insert(0, os.path.abspath('.'))
+from dextr.version import __version__
 
 # Read the README file for long description
 with open('README.md', 'r', encoding='utf-8') as f:
@@ -16,7 +21,7 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
 
 setup(
     name='dextr',
-    version='1.2.0',
+    version=__version__,
     description='Secure archiving and encryption system with multi-layer AEAD protection',
     long_description=long_description,
     long_description_content_type='text/markdown',

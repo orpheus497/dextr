@@ -3,6 +3,20 @@ dextr/streaming.py
 
 Streaming encryption and decryption implementation for the dextr application.
 Provides memory-efficient processing of large files through chunked operations.
+
+**EXPERIMENTAL MODULE - NOT YET PRODUCTION-READY**
+
+This module is under active development and is not currently used by the main
+dextr application. The streaming decryption implementation (stream_decrypt_layer)
+requires optimization before it can be used in production.
+
+TODO: Complete and optimize stream_decrypt_layer chunk boundary detection
+TODO: Integrate streaming mode into core.py for large file support
+TODO: Add comprehensive tests for streaming operations
+TODO: Benchmark and optimize performance
+
+For now, use the standard (non-streaming) encrypt_paths() and decrypt_archive()
+functions from dextr.core for all operations.
 """
 
 import os

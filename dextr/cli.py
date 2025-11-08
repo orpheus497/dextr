@@ -12,19 +12,36 @@ import sys
 import os
 import argparse
 from pathlib import Path
-from typing import List, NoReturn
+from typing import List, NoReturn, Optional
 
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+
+from dextr.version import __version__
 from dextr.core import (
     generate_key_file,
     load_key_file,
     encrypt_paths,
     decrypt_archive,
+    get_archive_info,
+)
+from dextr.exceptions import (
     DextrError,
     KeyManagementError,
     ArchivingError,
     EncryptionError,
     DecryptionError,
+    ValidationError,
 )
+from dextr.config import load_config, get_max_archive_size
+from dextr.logging_config import setup_logging, get_logger
+
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 
 def format_bytes(size: int) -> str:
@@ -41,7 +58,7 @@ def format_bytes(size: int) -> str:
 def print_banner() -> None:
     """Print the application banner."""
     print("╔══════════════════════════════════════════════════╗")
-    print("║              D E X T R  v1.1.0                   ║")
+    print(f"║              D E X T R  v{__version__}                   ║")
     print("║      Secure Archiving & Encryption System        ║")
     print("║            Created by orpheus497                 ║")
     print("╚══════════════════════════════════════════════════╝")
@@ -54,14 +71,77 @@ def error_exit(message: str, exit_code: int = 1) -> NoReturn:
     sys.exit(exit_code)
 
 
+class ProgressCallback:
+    """Progress callback wrapper for tqdm integration."""
+
+    def __init__(self, quiet: bool = False):
+        """
+        Initialize progress callback.
+
+        Args:
+            quiet: If True, suppress all progress output
+        """
+        self.quiet = quiet
+        self.pbar: Optional[any] = None
+        self.current_stage = ""
+
+    def __call__(self, stage: str, current: int, total: int) -> None:
+        """
+        Progress callback function.
+
+        Args:
+            stage: Current operation stage
+            current: Current progress value
+            total: Total progress value
+        """
+        if self.quiet:
+            return
+
+        # If stage changed, update description
+        if stage != self.current_stage:
+            if self.pbar is not None:
+                self.pbar.close()
+
+            self.current_stage = stage
+
+            # Create new progress bar if tqdm is available
+            if HAS_TQDM:
+                self.pbar = tqdm(
+                    total=total,
+                    desc=stage,
+                    unit='%',
+                    bar_format='{desc}: {percentage:3.0f}%|{bar}| [{elapsed}<{remaining}]'
+                )
+            else:
+                # Fallback: simple text output
+                print(f"[*] {stage}...")
+
+        # Update progress bar
+        if self.pbar is not None and HAS_TQDM:
+            self.pbar.n = current
+            self.pbar.refresh()
+
+        # If complete, close progress bar
+        if current >= total and self.pbar is not None:
+            if HAS_TQDM:
+                self.pbar.close()
+            self.pbar = None
+
+    def close(self) -> None:
+        """Close any open progress bars."""
+        if self.pbar is not None and HAS_TQDM:
+            self.pbar.close()
+            self.pbar = None
+
+
 def cmd_generate(args: argparse.Namespace) -> int:
     """Handle the 'generate' command."""
     key_path = args.output if args.output else 'dextrkey.dxk'
-    
+
     # Check if file already exists
     if os.path.exists(key_path) and not args.force:
         error_exit(f"Key file '{key_path}' already exists. Use --force to overwrite.")
-    
+
     try:
         metadata = generate_key_file(key_path)
         print(f"Success: Generated new key file at '{key_path}'")
@@ -77,53 +157,70 @@ def cmd_generate(args: argparse.Namespace) -> int:
         error_exit(f"Unexpected error generating key file: {e}")
 
 
-def cmd_encrypt(args: argparse.Namespace) -> int:
+def cmd_encrypt(args: argparse.Namespace, config: dict) -> int:
     """Handle the 'encrypt' command."""
     key_path = args.key
     input_paths = args.input
     output_path = args.output
-    
+
     # Validate key file exists
     if not os.path.exists(key_path):
         error_exit(f"Key file not found: {key_path}")
-    
+
     # Validate all input paths exist
     for path in input_paths:
         if not os.path.exists(path):
             error_exit(f"Input path not found: {path}")
-    
+
     # Check if output file already exists
     if os.path.exists(output_path) and not args.force:
         error_exit(f"Output file '{output_path}' already exists. Use --force to overwrite.")
-    
+
     try:
         # Load the key
         if not args.quiet:
             print(f"[*] Loading key from '{key_path}'...")
         master_key, metadata = load_key_file(key_path)
-        
+
         if args.verbose:
             print(f"    Key ID: {metadata.get('key_id', 'unknown')}")
-        
-        # Perform encryption
+
+        # Perform encryption with progress tracking
         if not args.quiet:
             print(f"[*] Archiving and encrypting {len(input_paths)} path(s)...")
-        
-        encrypt_paths(input_paths, output_path, master_key)
-        
+
+        # Get max archive size from config
+        max_size = get_max_archive_size(config)
+
+        # Create progress callback
+        progress = ProgressCallback(quiet=args.quiet)
+
+        try:
+            encrypt_paths(
+                input_paths,
+                output_path,
+                master_key,
+                max_size=max_size,
+                progress_callback=progress if not args.quiet else None
+            )
+        finally:
+            progress.close()
+
         # Report success
         output_size = os.path.getsize(output_path)
         print(f"Success: Archive encrypted to '{output_path}'")
         print(f"    Encrypted size: {format_bytes(output_size)}")
-        
+
         return 0
-        
+
     except KeyManagementError as e:
         error_exit(f"Key error: {e}")
     except ArchivingError as e:
         error_exit(f"Archiving error: {e}")
     except EncryptionError as e:
         error_exit(f"Encryption error: {e}")
+    except ValidationError as e:
+        error_exit(f"Validation error: {e}")
     except DextrError as e:
         error_exit(str(e))
     except Exception as e:
@@ -135,15 +232,15 @@ def cmd_decrypt(args: argparse.Namespace) -> int:
     key_path = args.key
     input_path = args.input
     output_dir = args.output
-    
+
     # Validate key file exists
     if not os.path.exists(key_path):
         error_exit(f"Key file not found: {key_path}")
-    
+
     # Validate input file exists
     if not os.path.exists(input_path):
         error_exit(f"Encrypted file not found: {input_path}")
-    
+
     # Check if output directory exists
     if os.path.exists(output_dir):
         if not os.path.isdir(output_dir):
@@ -156,31 +253,44 @@ def cmd_decrypt(args: argparse.Namespace) -> int:
             os.makedirs(output_dir, exist_ok=True)
         except OSError as e:
             error_exit(f"Failed to create output directory: {e}")
-    
+
     try:
         # Load the key
         if not args.quiet:
             print(f"[*] Loading key from '{key_path}'...")
         master_key, metadata = load_key_file(key_path)
-        
+
         if args.verbose:
             print(f"    Key ID: {metadata.get('key_id', 'unknown')}")
-        
-        # Perform decryption
+
+        # Perform decryption with progress tracking
         if not args.quiet:
             print(f"[*] Decrypting and extracting '{input_path}'...")
-        
-        decrypt_archive(input_path, output_dir, master_key)
-        
+
+        # Create progress callback
+        progress = ProgressCallback(quiet=args.quiet)
+
+        try:
+            decrypt_archive(
+                input_path,
+                output_dir,
+                master_key,
+                progress_callback=progress if not args.quiet else None
+            )
+        finally:
+            progress.close()
+
         # Report success
         print(f"Success: Archive decrypted and extracted to '{output_dir}'")
-        
+
         return 0
-        
+
     except KeyManagementError as e:
         error_exit(f"Key error: {e}")
     except DecryptionError as e:
         error_exit(f"Decryption error: {e}")
+    except ValidationError as e:
+        error_exit(f"Validation error: {e}")
     except DextrError as e:
         error_exit(str(e))
     except Exception as e:
@@ -190,14 +300,14 @@ def cmd_decrypt(args: argparse.Namespace) -> int:
 def cmd_info(args: argparse.Namespace) -> int:
     """Handle the 'info' command."""
     key_path = args.key
-    
+
     # Validate key file exists
     if not os.path.exists(key_path):
         error_exit(f"Key file not found: {key_path}")
-    
+
     try:
         master_key, metadata = load_key_file(key_path)
-        
+
         print(f"Key File: {key_path}")
         print(f"  Magic: {metadata.get('magic', 'unknown')}")
         print(f"  Version: {metadata.get('version', 'unknown')}")
@@ -205,9 +315,9 @@ def cmd_info(args: argparse.Namespace) -> int:
         print(f"  Created at: {metadata.get('created_at', 'unknown')}")
         print(f"  Key ID: {metadata.get('key_id', 'unknown')}")
         print(f"  Master Key Length: {len(master_key) * 8} bits")
-        
+
         return 0
-        
+
     except KeyManagementError as e:
         error_exit(f"Key error: {e}")
     except DextrError as e:
@@ -216,10 +326,106 @@ def cmd_info(args: argparse.Namespace) -> int:
         error_exit(f"Unexpected error reading key file: {e}")
 
 
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Handle the 'verify' command - verify archive without decrypting."""
+    archive_path = args.input
+
+    # Validate archive file exists
+    if not os.path.exists(archive_path):
+        error_exit(f"Archive file not found: {archive_path}")
+
+    try:
+        info = get_archive_info(archive_path)
+
+        print(f"Archive: {archive_path}")
+        print(f"  Format Version: {info['format_version']}")
+        print(f"  Key ID: {info['key_id']}")
+        print(f"  File Size: {format_bytes(info['file_size'])}")
+        print(f"  Encrypted Data Size: {format_bytes(info['encrypted_size'])}")
+        print(f"  Salt: {info['salt'][:32]}...")
+        print()
+        print("✓ Archive structure is valid")
+
+        return 0
+
+    except DecryptionError as e:
+        error_exit(f"Verification error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error verifying archive: {e}")
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    """Handle the 'list' command - list archive contents without extracting."""
+    key_path = args.key
+    input_path = args.input
+
+    # Validate key file exists
+    if not os.path.exists(key_path):
+        error_exit(f"Key file not found: {key_path}")
+
+    # Validate input file exists
+    if not os.path.exists(input_path):
+        error_exit(f"Archive file not found: {input_path}")
+
+    try:
+        import tarfile
+        import tempfile
+
+        # Load the key
+        if not args.quiet:
+            print(f"[*] Loading key from '{key_path}'...")
+        master_key, metadata = load_key_file(key_path)
+
+        # For listing, we need to decrypt but not extract
+        # We'll use a temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            if not args.quiet:
+                print(f"[*] Decrypting archive (temporary)...")
+
+            # Decrypt to temp directory
+            decrypt_archive(input_path, temp_dir, master_key)
+
+            print(f"\nContents of '{input_path}':")
+            print("-" * 60)
+
+            # List all files recursively
+            total_size = 0
+            file_count = 0
+            dir_count = 0
+
+            for item in sorted(Path(temp_dir).rglob('*')):
+                if item.is_file():
+                    size = item.stat().st_size
+                    total_size += size
+                    file_count += 1
+                    rel_path = item.relative_to(temp_dir)
+                    print(f"  {format_bytes(size):>12}  {rel_path}")
+                elif item.is_dir() and item != Path(temp_dir):
+                    dir_count += 1
+                    rel_path = item.relative_to(temp_dir)
+                    print(f"  {'<DIR>':>12}  {rel_path}/")
+
+            print("-" * 60)
+            print(f"Total: {file_count} file(s), {dir_count} dir(s), {format_bytes(total_size)}")
+
+        return 0
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except DecryptionError as e:
+        error_exit(f"Decryption error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error listing archive: {e}")
+
+
 def cmd_help(args: argparse.Namespace) -> int:
     """Handle the 'help' command - show detailed usage guide."""
     topic = args.topic if hasattr(args, 'topic') else None
-    
+
     if topic == 'security':
         print("╔══════════════════════════════════════════════════╗")
         print("║          dextr Security Information              ║")
@@ -251,7 +457,7 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  ✓ Test decryption after encryption")
         print("  ✓ Protect key files like passwords")
         print()
-        
+
     elif topic == 'workflow':
         print("╔══════════════════════════════════════════════════╗")
         print("║          dextr Typical Workflows                 ║")
@@ -281,7 +487,7 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  $ dextr encrypt -k key.dxk -i file1.pdf file2.docx photos/ -o archive.dxe")
         print("  (All files and directories archived into single encrypted file)")
         print()
-        
+
     elif topic == 'examples':
         print("╔══════════════════════════════════════════════════╗")
         print("║          dextr Command Examples                  ║")
@@ -303,6 +509,12 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  dextr decrypt -k key.dxk -i backup.dxe -o . --force")
         print("  dextr decrypt -k key.dxk -i backup.dxe -o output/ --verbose")
         print()
+        print("Verify Archive:")
+        print("  dextr verify -i backup.dxe        # Check structure without key")
+        print()
+        print("List Contents:")
+        print("  dextr list -k key.dxk -i backup.dxe  # Show archive contents")
+        print()
         print("Info:")
         print("  dextr info -k key.dxk            # View key metadata")
         print()
@@ -312,7 +524,7 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  dextr help workflow               # Common workflows")
         print("  dextr --help                      # Command syntax")
         print()
-        
+
     elif topic == 'troubleshooting':
         print("╔══════════════════════════════════════════════════╗")
         print("║          dextr Troubleshooting Guide             ║")
@@ -348,11 +560,11 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("  → Run: pip install --user -r requirements.txt")
         print("  → Or: pip install --user cryptography")
         print()
-        
+
     else:
         # General help
         print("╔══════════════════════════════════════════════════╗")
-        print("║              D E X T R  v1.1.0                   ║")
+        print(f"║              D E X T R  v{__version__}                   ║")
         print("║      Secure Archiving & Encryption System        ║")
         print("║            Created by orpheus497                 ║")
         print("╚══════════════════════════════════════════════════╝")
@@ -363,6 +575,8 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("                               Encrypt files/directories")
         print("  decrypt -k KEY -i INPUT -o OUTPUT")
         print("                               Decrypt and extract archive")
+        print("  verify -i ARCHIVE            Verify archive structure")
+        print("  list -k KEY -i ARCHIVE       List archive contents")
         print("  info -k KEY                  Display key file information")
         print("  help [topic]                 Show detailed help")
         print()
@@ -386,7 +600,7 @@ def cmd_help(args: argparse.Namespace) -> int:
         print("For command-specific help: dextr COMMAND --help")
         print("Example: dextr encrypt --help")
         print()
-    
+
     return 0
 
 
@@ -397,15 +611,15 @@ def main() -> int:
         description='Secure archiving and encryption system',
         epilog='Created by orpheus497. Use responsibly and always maintain key backups.'
     )
-    
+
     parser.add_argument(
         '--version',
         action='version',
-        version='dextr 1.1.0'
+        version=f'dextr {__version__}'
     )
-    
+
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+
     # Generate command
     parser_generate = subparsers.add_parser(
         'generate',
@@ -422,7 +636,7 @@ def main() -> int:
         action='store_true',
         help='Overwrite existing key file if present'
     )
-    
+
     # Encrypt command
     parser_encrypt = subparsers.add_parser(
         'encrypt',
@@ -459,7 +673,7 @@ def main() -> int:
         action='store_true',
         help='Show detailed progress information'
     )
-    
+
     # Decrypt command
     parser_decrypt = subparsers.add_parser(
         'decrypt',
@@ -495,7 +709,7 @@ def main() -> int:
         action='store_true',
         help='Show detailed progress information'
     )
-    
+
     # Info command
     parser_info = subparsers.add_parser(
         'info',
@@ -506,7 +720,39 @@ def main() -> int:
         required=True,
         help='Path to the key file (.dxk)'
     )
-    
+
+    # Verify command (new feature)
+    parser_verify = subparsers.add_parser(
+        'verify',
+        help='Verify archive structure without decrypting'
+    )
+    parser_verify.add_argument(
+        '-i', '--input',
+        required=True,
+        help='Path to the archive file (.dxe)'
+    )
+
+    # List command (new feature)
+    parser_list = subparsers.add_parser(
+        'list',
+        help='List archive contents without extracting'
+    )
+    parser_list.add_argument(
+        '-k', '--key',
+        required=True,
+        help='Path to the key file (.dxk)'
+    )
+    parser_list.add_argument(
+        '-i', '--input',
+        required=True,
+        help='Path to the archive file (.dxe)'
+    )
+    parser_list.add_argument(
+        '--quiet',
+        action='store_true',
+        help='Suppress status messages'
+    )
+
     # Help command
     parser_help = subparsers.add_parser(
         'help',
@@ -518,24 +764,39 @@ def main() -> int:
         choices=['security', 'workflow', 'examples', 'troubleshooting'],
         help='Specific help topic (security, workflow, examples, troubleshooting)'
     )
-    
+
     # Parse arguments
     args = parser.parse_args()
-    
+
+    # Load configuration
+    config = load_config()
+
+    # Setup logging
+    setup_logging(
+        log_level=config.get('log_level', 'INFO'),
+        log_file=config.get('log_file', None),
+        verbose=getattr(args, 'verbose', False),
+        quiet=getattr(args, 'quiet', False)
+    )
+
     # If no command specified, show help
     if not args.command:
         parser.print_help()
         return 1
-    
+
     # Route to appropriate command handler
     if args.command == 'generate':
         return cmd_generate(args)
     elif args.command == 'encrypt':
-        return cmd_encrypt(args)
+        return cmd_encrypt(args, config)
     elif args.command == 'decrypt':
         return cmd_decrypt(args)
     elif args.command == 'info':
         return cmd_info(args)
+    elif args.command == 'verify':
+        return cmd_verify(args)
+    elif args.command == 'list':
+        return cmd_list(args)
     elif args.command == 'help':
         return cmd_help(args)
     else:
