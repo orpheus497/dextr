@@ -63,6 +63,11 @@ from dextr.logging_config import (
     log_operation_complete,
     log_operation_error
 )
+from dextr.key_protection import (
+    encrypt_key_with_password,
+    decrypt_key_with_password,
+    is_password_protected
+)
 
 
 # Get logger for this module
@@ -170,7 +175,8 @@ def _create_secure_temp_file(suffix: str = "", dir: Optional[Path] = None) -> Tu
 def generate_key_file(
     path: str,
     username: Optional[str] = None,
-    enforce_permissions: bool = True
+    enforce_permissions: bool = True,
+    password: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Generate a new encryption key file.
@@ -179,6 +185,7 @@ def generate_key_file(
         path: Path where key file will be created
         username: Username to record (detected if not provided)
         enforce_permissions: If True, set restrictive permissions on key file
+        password: Optional password to encrypt the key file with
 
     Returns:
         Dictionary containing key metadata
@@ -223,6 +230,11 @@ def generate_key_file(
             "master_key": master_key.hex()
         }
 
+        # Optionally encrypt with password
+        if password:
+            logger.info("Encrypting key file with password")
+            key_file_data = encrypt_key_with_password(key_file_data, password)
+
         # Write to file
         try:
             json_data = json.dumps(key_file_data, indent=2).encode('utf-8')
@@ -257,12 +269,13 @@ def generate_key_file(
         raise
 
 
-def load_key_file(path: str) -> Tuple[bytes, Dict[str, Any]]:
+def load_key_file(path: str, password: Optional[str] = None) -> Tuple[bytes, Dict[str, Any]]:
     """
     Load and validate an encryption key file.
 
     Args:
         path: Path to the key file
+        password: Password for password-protected key files (None for unprotected)
 
     Returns:
         Tuple of (master_key bytes, metadata dictionary)
@@ -286,6 +299,17 @@ def load_key_file(path: str) -> Tuple[bytes, Dict[str, Any]]:
             raise KeyManagementError(
                 f"Failed to read or parse key file: {e}"
             ) from e
+
+        # Check if password-protected
+        if is_password_protected(data):
+            logger.info("Key file is password-protected")
+            if not password:
+                raise KeyManagementError(
+                    "Key file is password-protected but no password provided. "
+                    "Use --password or --password-file option."
+                )
+            # Decrypt with password
+            data = decrypt_key_with_password(data, password)
 
         # Validate structure
         metadata = data.get("metadata", {})
@@ -795,3 +819,159 @@ def get_archive_info(path: str) -> Dict[str, Any]:
 
     except Exception as e:
         raise DecryptionError(f"Failed to read archive info: {e}") from e
+
+
+def check_archive_integrity(
+    in_path: str,
+    master_key: bytes,
+    quick: bool = False
+) -> Dict[str, Any]:
+    """
+    Check the integrity of an encrypted archive.
+
+    Performs a partial decryption to verify the archive can be decrypted
+    with the provided key. Can perform either a quick check (header + first layer)
+    or a full check (complete decryption without extraction).
+
+    Args:
+        in_path: Path to encrypted archive (.dxe)
+        master_key: Master decryption key (512 bits)
+        quick: If True, only check first decryption layer (faster)
+
+    Returns:
+        Dictionary with integrity check results:
+        - valid: Boolean indicating if archive passed checks
+        - header_valid: Header structure valid
+        - key_match: Key ID matches provided key
+        - decrypt_success: Decryption succeeded (at least first layer)
+        - full_decrypt_success: All layers decrypted (if quick=False)
+        - error: Error message if validation failed
+
+    Raises:
+        ValidationError: If input validation fails
+        DecryptionError: If integrity check cannot be performed
+    """
+    log_operation_start("check_archive_integrity", input=in_path, quick=quick)
+
+    result = {
+        'valid': False,
+        'header_valid': False,
+        'key_match': False,
+        'decrypt_success': False,
+        'full_decrypt_success': False,
+        'error': None
+    }
+
+    try:
+        # Validate input
+        archive_path = validate_archive_file(in_path, for_output=False)
+
+        logger.info(f"Checking integrity of {archive_path}")
+
+        # Read encrypted file
+        try:
+            with open(archive_path, 'rb') as f:
+                encrypted_data = f.read()
+        except IOError as e:
+            result['error'] = f"Failed to read archive: {e}"
+            return result
+
+        total_size = len(encrypted_data)
+        logger.debug(f"Archive size: {total_size} bytes")
+
+        # Check header
+        if len(encrypted_data) < HEADER_SIZE:
+            result['error'] = "Archive too small (header incomplete)"
+            return result
+
+        header = encrypted_data[:HEADER_SIZE]
+        ciphertext = encrypted_data[HEADER_SIZE:]
+        magic, version, key_id, salt = struct.unpack(HEADER_FORMAT, header)
+
+        # Validate header
+        if magic != MAGIC_HEADER:
+            result['error'] = "Invalid magic number in header"
+            return result
+
+        result['header_valid'] = True
+
+        if version > FORMAT_VERSION:
+            result['error'] = f"Unsupported format version: {version}"
+            return result
+
+        # Verify key matches
+        expected_key_id = hashlib.sha256(master_key).digest()[:KEY_ID_SIZE]
+        if key_id != expected_key_id:
+            result['error'] = "Key ID mismatch - wrong key provided"
+            return result
+
+        result['key_match'] = True
+
+        # Derive keys
+        layer_keys = _derive_layer_keys(master_key, salt)
+
+        # Create cipher instances (in reverse order for decryption)
+        ciphers = [
+            ChaCha20Poly1305(layer_keys[0]),
+            AESGCM(layer_keys[1]),
+            AESGCM(layer_keys[2]),
+            ChaCha20Poly1305(layer_keys[3])
+        ]
+
+        # Decrypt layers
+        data = ciphertext
+
+        if quick:
+            # Quick check: only decrypt first layer
+            try:
+                cipher = ciphers[3]  # Last cipher for first layer
+                nonce = data[:NONCE_SIZE]
+                data = cipher.decrypt(nonce, data[NONCE_SIZE:], None)
+                result['decrypt_success'] = True
+                result['valid'] = True
+                logger.info("Quick integrity check passed")
+            except InvalidTag:
+                result['error'] = "First decryption layer failed - data corrupted or wrong key"
+                return result
+            except Exception as e:
+                result['error'] = f"Decryption error: {e}"
+                return result
+
+        else:
+            # Full check: decrypt all layers
+            try:
+                for i, cipher in enumerate(reversed(ciphers)):
+                    nonce = data[:NONCE_SIZE]
+                    data = cipher.decrypt(nonce, data[NONCE_SIZE:], None)
+                    logger.debug(f"Decrypted layer {len(ciphers)-i}")
+
+                result['decrypt_success'] = True
+
+                # Try to decompress
+                try:
+                    decompressed = zlib.decompress(data)
+                    logger.debug(f"Decompressed: {len(decompressed)} bytes")
+                    result['full_decrypt_success'] = True
+                    result['valid'] = True
+                    logger.info("Full integrity check passed")
+                except zlib.error as e:
+                    result['error'] = f"Decompression failed: {e}"
+                    return result
+
+            except InvalidTag:
+                result['error'] = "Decryption failed - data corrupted or tampered"
+                return result
+            except Exception as e:
+                result['error'] = f"Decryption error: {e}"
+                return result
+
+        log_operation_complete("check_archive_integrity", valid=result['valid'])
+        return result
+
+    except ValidationError as e:
+        result['error'] = str(e)
+        raise
+    except Exception as e:
+        result['error'] = str(e)
+        log_operation_error("check_archive_integrity", e, input=in_path)
+        raise DecryptionError(f"Integrity check failed: {e}") from e

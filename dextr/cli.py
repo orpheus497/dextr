@@ -27,6 +27,7 @@ from dextr.core import (
     encrypt_paths,
     decrypt_archive,
     get_archive_info,
+    check_archive_integrity,
 )
 from dextr.exceptions import (
     DextrError,
@@ -35,6 +36,11 @@ from dextr.exceptions import (
     EncryptionError,
     DecryptionError,
     ValidationError,
+)
+from dextr.key_protection import (
+    prompt_password,
+    read_password_from_file,
+    get_password_strength,
 )
 from dextr.config import load_config, get_max_archive_size
 from dextr.logging_config import setup_logging, get_logger
@@ -69,6 +75,34 @@ def error_exit(message: str, exit_code: int = 1) -> NoReturn:
     """Print error message and exit."""
     print(f"Error: {message}", file=sys.stderr)
     sys.exit(exit_code)
+
+
+def get_password_from_args(args: argparse.Namespace) -> Optional[str]:
+    """
+    Get password from command-line arguments.
+
+    Checks for --password or --password-file flags and returns the password.
+
+    Args:
+        args: Parsed command-line arguments
+
+    Returns:
+        Password string or None if no password specified
+
+    Raises:
+        Exits on error
+    """
+    if getattr(args, 'password', False):
+        try:
+            return prompt_password()
+        except KeyManagementError as e:
+            error_exit(str(e))
+    elif getattr(args, 'password_file', None):
+        try:
+            return read_password_from_file(args.password_file)
+        except KeyManagementError as e:
+            error_exit(str(e))
+    return None
 
 
 class ProgressCallback:
@@ -142,14 +176,36 @@ def cmd_generate(args: argparse.Namespace) -> int:
     if os.path.exists(key_path) and not args.force:
         error_exit(f"Key file '{key_path}' already exists. Use --force to overwrite.")
 
+    # Get password if requested
+    password = None
+    if getattr(args, 'password', False):
+        try:
+            password = prompt_password("Enter password to protect key file: ", confirm=True)
+            # Show password strength
+            strength = get_password_strength(password)
+            print(f"Password strength: {strength['strength']} (score: {strength['score']}/100)")
+            if strength['strength'] == 'weak':
+                print("⚠️  Warning: Consider using a stronger password")
+        except KeyManagementError as e:
+            error_exit(str(e))
+    elif getattr(args, 'password_file', None):
+        try:
+            password = read_password_from_file(args.password_file)
+        except KeyManagementError as e:
+            error_exit(str(e))
+
     try:
-        metadata = generate_key_file(key_path)
+        metadata = generate_key_file(key_path, password=password)
         print(f"Success: Generated new key file at '{key_path}'")
         print(f"  Created by: {metadata.get('created_by', 'unknown')}")
         print(f"  Created at: {metadata.get('created_at', 'unknown')}")
         print(f"  Key ID: {metadata.get('key_id', 'unknown')}")
+        if password:
+            print(f"  Protection: Password-protected")
         print()
         print("⚠️  IMPORTANT: Back up this key file securely. Without it, your encrypted data cannot be recovered.")
+        if password:
+            print("⚠️  IMPORTANT: Remember your password. Without it, the key file cannot be used.")
         return 0
     except KeyManagementError as e:
         error_exit(str(e))
@@ -176,11 +232,14 @@ def cmd_encrypt(args: argparse.Namespace, config: dict) -> int:
     if os.path.exists(output_path) and not args.force:
         error_exit(f"Output file '{output_path}' already exists. Use --force to overwrite.")
 
+    # Get password if needed
+    password = get_password_from_args(args)
+
     try:
         # Load the key
         if not args.quiet:
             print(f"[*] Loading key from '{key_path}'...")
-        master_key, metadata = load_key_file(key_path)
+        master_key, metadata = load_key_file(key_path, password=password)
 
         if args.verbose:
             print(f"    Key ID: {metadata.get('key_id', 'unknown')}")
@@ -254,11 +313,14 @@ def cmd_decrypt(args: argparse.Namespace) -> int:
         except OSError as e:
             error_exit(f"Failed to create output directory: {e}")
 
+    # Get password if needed
+    password = get_password_from_args(args)
+
     try:
         # Load the key
         if not args.quiet:
             print(f"[*] Loading key from '{key_path}'...")
-        master_key, metadata = load_key_file(key_path)
+        master_key, metadata = load_key_file(key_path, password=password)
 
         if args.verbose:
             print(f"    Key ID: {metadata.get('key_id', 'unknown')}")
@@ -305,8 +367,11 @@ def cmd_info(args: argparse.Namespace) -> int:
     if not os.path.exists(key_path):
         error_exit(f"Key file not found: {key_path}")
 
+    # Get password if needed
+    password = get_password_from_args(args)
+
     try:
-        master_key, metadata = load_key_file(key_path)
+        master_key, metadata = load_key_file(key_path, password=password)
 
         print(f"Key File: {key_path}")
         print(f"  Magic: {metadata.get('magic', 'unknown')}")
@@ -369,6 +434,9 @@ def cmd_list(args: argparse.Namespace) -> int:
     if not os.path.exists(input_path):
         error_exit(f"Archive file not found: {input_path}")
 
+    # Get password if needed
+    password = get_password_from_args(args)
+
     try:
         import tarfile
         import tempfile
@@ -376,7 +444,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         # Load the key
         if not args.quiet:
             print(f"[*] Loading key from '{key_path}'...")
-        master_key, metadata = load_key_file(key_path)
+        master_key, metadata = load_key_file(key_path, password=password)
 
         # For listing, we need to decrypt but not extract
         # We'll use a temporary directory
@@ -420,6 +488,73 @@ def cmd_list(args: argparse.Namespace) -> int:
         error_exit(str(e))
     except Exception as e:
         error_exit(f"Unexpected error listing archive: {e}")
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    """Handle the 'check' command - check archive integrity with key."""
+    key_path = args.key
+    input_path = args.input
+
+    # Validate key file exists
+    if not os.path.exists(key_path):
+        error_exit(f"Key file not found: {key_path}")
+
+    # Validate input file exists
+    if not os.path.exists(input_path):
+        error_exit(f"Archive file not found: {input_path}")
+
+    # Get password if needed
+    password = get_password_from_args(args)
+
+    # Determine check type
+    quick = getattr(args, 'quick', False)
+
+    try:
+        # Load the key
+        if not args.quiet:
+            print(f"[*] Loading key from '{key_path}'...")
+        master_key, metadata = load_key_file(key_path, password=password)
+
+        if args.verbose:
+            print(f"    Key ID: {metadata.get('key_id', 'unknown')}")
+
+        # Perform integrity check
+        if not args.quiet:
+            check_type = "quick" if quick else "full"
+            print(f"[*] Performing {check_type} integrity check on '{input_path}'...")
+
+        result = check_archive_integrity(input_path, master_key, quick=quick)
+
+        # Display results
+        print(f"\nIntegrity Check Results for '{input_path}':")
+        print("-" * 60)
+        print(f"  Header Valid:           {'✓ Yes' if result['header_valid'] else '✗ No'}")
+        print(f"  Key Match:              {'✓ Yes' if result['key_match'] else '✗ No'}")
+        print(f"  Decryption Success:     {'✓ Yes' if result['decrypt_success'] else '✗ No'}")
+
+        if not quick:
+            print(f"  Full Decrypt Success:   {'✓ Yes' if result['full_decrypt_success'] else '✗ No'}")
+
+        print("-" * 60)
+
+        if result['valid']:
+            print("✓ Archive integrity check PASSED")
+            print("\nThe archive appears to be valid and can be decrypted with this key.")
+            return 0
+        else:
+            print("✗ Archive integrity check FAILED")
+            if result.get('error'):
+                print(f"\nError: {result['error']}")
+            return 1
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except DecryptionError as e:
+        error_exit(f"Integrity check error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error during integrity check: {e}")
 
 
 def cmd_help(args: argparse.Namespace) -> int:
@@ -636,6 +771,16 @@ def main() -> int:
         action='store_true',
         help='Overwrite existing key file if present'
     )
+    parser_generate.add_argument(
+        '--password',
+        action='store_true',
+        help='Encrypt the key file with a password'
+    )
+    parser_generate.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file'
+    )
 
     # Encrypt command
     parser_encrypt = subparsers.add_parser(
@@ -673,6 +818,16 @@ def main() -> int:
         action='store_true',
         help='Show detailed progress information'
     )
+    parser_encrypt.add_argument(
+        '--password',
+        action='store_true',
+        help='Prompt for password if key file is password-protected'
+    )
+    parser_encrypt.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file for password-protected keys'
+    )
 
     # Decrypt command
     parser_decrypt = subparsers.add_parser(
@@ -709,6 +864,16 @@ def main() -> int:
         action='store_true',
         help='Show detailed progress information'
     )
+    parser_decrypt.add_argument(
+        '--password',
+        action='store_true',
+        help='Prompt for password if key file is password-protected'
+    )
+    parser_decrypt.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file for password-protected keys'
+    )
 
     # Info command
     parser_info = subparsers.add_parser(
@@ -719,6 +884,16 @@ def main() -> int:
         '-k', '--key',
         required=True,
         help='Path to the key file (.dxk)'
+    )
+    parser_info.add_argument(
+        '--password',
+        action='store_true',
+        help='Prompt for password if key file is password-protected'
+    )
+    parser_info.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file for password-protected keys'
     )
 
     # Verify command (new feature)
@@ -751,6 +926,57 @@ def main() -> int:
         '--quiet',
         action='store_true',
         help='Suppress status messages'
+    )
+    parser_list.add_argument(
+        '--password',
+        action='store_true',
+        help='Prompt for password if key file is password-protected'
+    )
+    parser_list.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file for password-protected keys'
+    )
+
+    # Check command (new feature)
+    parser_check = subparsers.add_parser(
+        'check',
+        help='Check archive integrity with key'
+    )
+    parser_check.add_argument(
+        '-k', '--key',
+        required=True,
+        help='Path to the key file (.dxk)'
+    )
+    parser_check.add_argument(
+        '-i', '--input',
+        required=True,
+        help='Path to the archive file (.dxe)'
+    )
+    parser_check.add_argument(
+        '--quick',
+        action='store_true',
+        help='Perform quick check (first layer only)'
+    )
+    parser_check.add_argument(
+        '--quiet',
+        action='store_true',
+        help='Suppress status messages'
+    )
+    parser_check.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Show detailed progress information'
+    )
+    parser_check.add_argument(
+        '--password',
+        action='store_true',
+        help='Prompt for password if key file is password-protected'
+    )
+    parser_check.add_argument(
+        '--password-file',
+        metavar='FILE',
+        help='Read password from file for password-protected keys'
     )
 
     # Help command
@@ -797,6 +1023,8 @@ def main() -> int:
         return cmd_verify(args)
     elif args.command == 'list':
         return cmd_list(args)
+    elif args.command == 'check':
+        return cmd_check(args)
     elif args.command == 'help':
         return cmd_help(args)
     else:

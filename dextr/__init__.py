@@ -54,6 +54,7 @@ from dextr.core import (
     encrypt_paths,
     decrypt_archive,
     get_archive_info,
+    check_archive_integrity,
 
     # Constants (useful for advanced users)
     MAGIC_HEADER,
@@ -61,6 +62,16 @@ from dextr.core import (
     KEY_FILE_MAGIC,
     KEY_FILE_VERSION,
     MASTER_KEY_SIZE,
+)
+
+# Import password protection utilities
+from dextr.key_protection import (
+    encrypt_key_with_password,
+    decrypt_key_with_password,
+    is_password_protected,
+    prompt_password,
+    read_password_from_file,
+    get_password_strength,
 )
 
 # Define public API
@@ -77,6 +88,15 @@ __all__ = [
     'encrypt_paths',
     'decrypt_archive',
     'get_archive_info',
+    'check_archive_integrity',
+
+    # Password protection
+    'encrypt_key_with_password',
+    'decrypt_key_with_password',
+    'is_password_protected',
+    'prompt_password',
+    'read_password_from_file',
+    'get_password_strength',
 
     # Exceptions
     'DextrError',
