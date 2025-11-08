@@ -13,8 +13,12 @@ try:
     # Python 3.11+
     import tomllib
 except ImportError:
-    # Python 3.7-3.10, use tomli (but we'll use simple parsing instead)
-    tomllib = None
+    try:
+        # Python 3.7-3.10, use tomli
+        import tomli as tomllib
+    except ImportError:
+        # If tomli not installed, fall back to simple parser
+        tomllib = None
 
 
 # Default configuration values
@@ -102,14 +106,15 @@ def load_config_file(path: Path) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # Try using built-in tomllib (Python 3.11+)
+        # Try using tomllib (Python 3.11+) or tomli (Python 3.7-3.10)
         if tomllib is not None:
-            config = tomllib.loads(content)
+            # tomllib/tomli requires binary mode
+            with open(path, 'rb') as f:
+                config = tomllib.load(f)
         else:
-            # Fallback to simple parser
+            # Fallback to simple parser if tomli not installed
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
             config = _simple_toml_parse(content)
 
         return config
