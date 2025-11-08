@@ -41,7 +41,7 @@ def format_bytes(size: int) -> str:
 def print_banner() -> None:
     """Print the application banner."""
     print("╔══════════════════════════════════════════════════╗")
-    print("║              D E X T R  v1.0.0                   ║")
+    print("║              D E X T R  v1.1.0                   ║")
     print("║      Secure Archiving & Encryption System        ║")
     print("║            Created by orpheus497                 ║")
     print("╚══════════════════════════════════════════════════╝")
@@ -352,7 +352,7 @@ def cmd_help(args: argparse.Namespace) -> int:
     else:
         # General help
         print("╔══════════════════════════════════════════════════╗")
-        print("║              D E X T R  v1.0.0                   ║")
+        print("║              D E X T R  v1.1.0                   ║")
         print("║      Secure Archiving & Encryption System        ║")
         print("║            Created by orpheus497                 ║")
         print("╚══════════════════════════════════════════════════╝")
@@ -401,7 +401,7 @@ def main() -> int:
     parser.add_argument(
         '--version',
         action='version',
-        version='dextr 1.0.0'
+        version='dextr 1.1.0'
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')

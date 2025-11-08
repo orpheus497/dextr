@@ -16,7 +16,7 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
 
 setup(
     name='dextr',
-    version='1.0.0',
+    version='1.1.0',
     description='Secure archiving and encryption system with multi-layer AEAD protection',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -37,7 +37,7 @@ setup(
         'Intended Audience :: System Administrators',
         'Topic :: Security :: Cryptography',
         'Topic :: System :: Archiving :: Backup',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -49,7 +49,7 @@ setup(
         'Operating System :: OS Independent',
         'Environment :: Console',
     ],
-    keywords='encryption cryptography backup security archiving aead',
+    keywords='encryption cryptography backup security archiving aead library api',
     project_urls={
         'Source': '',
         'Bug Reports': '',
