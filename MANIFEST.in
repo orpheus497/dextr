@@ -11,4 +11,8 @@ include requirements.txt
 include requirements-dev.txt
 include LICENSE
 recursive-include dextr *.py
-exclude .dev-docs
+recursive-include examples *.py *.md
+recursive-include docs *.rst *.md Makefile
+global-exclude .dev-docs/*
+global-exclude *.pyc
+global-exclude __pycache__

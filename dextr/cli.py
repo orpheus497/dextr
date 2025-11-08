@@ -12,7 +12,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
-from typing import List, NoReturn, Optional
+from typing import List, NoReturn, Optional, Any
 
 try:
     from tqdm import tqdm
@@ -82,7 +82,7 @@ class ProgressCallback:
             quiet: If True, suppress all progress output
         """
         self.quiet = quiet
-        self.pbar: Optional[any] = None
+        self.pbar: Optional[Any] = None
         self.current_stage = ""
 
     def __call__(self, stage: str, current: int, total: int) -> None:
