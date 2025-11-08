@@ -8,7 +8,7 @@ It uses a portable key file-based system, offering a secure alternative to passw
 
 ```
 ╔══════════════════════════════════════════════════╗
-║              D E X T R  v1.0.0                   ║
+║              D E X T R  v1.1.0                   ║
 ║      Secure Archiving & Encryption System        ║
 ║            Created by orpheus497                 ║
 ╚══════════════════════════════════════════════════╝

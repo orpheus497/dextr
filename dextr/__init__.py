@@ -28,7 +28,7 @@ Example usage:
     >>> decrypt_archive('backup.dxe', 'restored/', master_key)
 """
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __author__ = 'orpheus497'
 __license__ = 'MIT'
 
