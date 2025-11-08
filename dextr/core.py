@@ -18,7 +18,6 @@ import getpass
 import hashlib
 import json
 import os
-import shutil
 import struct
 import tarfile
 import tempfile

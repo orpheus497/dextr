@@ -20,7 +20,6 @@ functions from dextr.core for all operations.
 """
 
 import os
-import struct
 import tarfile
 import tempfile
 import zlib
@@ -28,7 +27,6 @@ from pathlib import Path
 from typing import BinaryIO, Callable, Iterator, List, Optional
 
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 from dextr.exceptions import ValidationError
 from dextr.logging_config import get_logger

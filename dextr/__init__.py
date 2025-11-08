@@ -35,7 +35,8 @@ __author__ = "orpheus497"
 __license__ = "MIT"
 
 # Import core functionality
-from dextr.core import (  # Key management functions; Encryption/decryption functions; Constants (useful for advanced users)
+# (key management, encryption/decryption functions, and constants)
+from dextr.core import (
     FORMAT_VERSION,
     KEY_FILE_MAGIC,
     KEY_FILE_VERSION,

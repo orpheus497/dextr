@@ -10,11 +10,10 @@ additional security when storing keys.
 """
 
 import getpass
-import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 try:
     from cryptography.exceptions import InvalidTag

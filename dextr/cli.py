@@ -12,7 +12,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, NoReturn, Optional
+from typing import Any, NoReturn, Optional
 
 try:
     from tqdm import tqdm
@@ -197,10 +197,11 @@ def cmd_generate(args: argparse.Namespace) -> int:
         print(f"  Created at: {metadata.get('created_at', 'unknown')}")
         print(f"  Key ID: {metadata.get('key_id', 'unknown')}")
         if password:
-            print(f"  Protection: Password-protected")
+            print("  Protection: Password-protected")
         print()
         print(
-            "⚠️  IMPORTANT: Back up this key file securely. Without it, your encrypted data cannot be recovered."
+            "⚠️  IMPORTANT: Back up this key file securely. "
+            "Without it, your encrypted data cannot be recovered."
         )
         if password:
             print("⚠️  IMPORTANT: Remember your password. Without it, the key file cannot be used.")
@@ -438,7 +439,6 @@ def cmd_list(args: argparse.Namespace) -> int:
     password = get_password_from_args(args)
 
     try:
-        import tarfile
         import tempfile
 
         # Load the key
@@ -450,7 +450,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         # We'll use a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             if not args.quiet:
-                print(f"[*] Decrypting archive (temporary)...")
+                print("[*] Decrypting archive (temporary)...")
 
             # Decrypt to temp directory
             decrypt_archive(input_path, temp_dir, master_key)

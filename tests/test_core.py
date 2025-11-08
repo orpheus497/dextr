@@ -5,7 +5,6 @@ Core functionality tests for dextr encryption and decryption.
 Tests key generation, encryption/decryption roundtrips, and archive operations.
 """
 
-import os
 from pathlib import Path
 
 import pytest
@@ -308,4 +307,6 @@ class TestEdgeCases:
         decrypt_archive(str(archive_path), str(output_dir), master_key)
 
         # Verify structure was preserved
-        assert_directories_equal(Path(nested_directories), output_dir / Path(nested_directories).name)
+        assert_directories_equal(
+            Path(nested_directories), output_dir / Path(nested_directories).name
+        )

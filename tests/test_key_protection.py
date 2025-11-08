@@ -5,15 +5,11 @@ Tests for password-based key file protection.
 Tests password encryption, decryption, strength evaluation, and error handling.
 """
 
-from pathlib import Path
-
 import pytest
 
 from dextr import decrypt_archive, encrypt_paths, generate_key_file, load_key_file
 from dextr.exceptions import KeyManagementError
 from dextr.key_protection import (
-    decrypt_key_with_password,
-    encrypt_key_with_password,
     get_password_strength,
     is_password_protected,
     read_password_from_file,
@@ -61,13 +57,13 @@ class TestPasswordProtection:
         """Test that password encryption/decryption preserves key data."""
         # Generate regular key
         regular_key_path = temp_dir / "regular.dxk"
-        metadata1 = generate_key_file(str(regular_key_path))
+        _ = generate_key_file(str(regular_key_path))
         master_key1, _ = load_key_file(str(regular_key_path))
 
         # Generate password-protected key
         protected_key_path = temp_dir / "protected.dxk"
         password = "TestPassword123!"
-        metadata2 = generate_key_file(str(protected_key_path), password=password)
+        _ = generate_key_file(str(protected_key_path), password=password)
         master_key2, _ = load_key_file(str(protected_key_path), password=password)
 
         # Both should have 512-bit keys
