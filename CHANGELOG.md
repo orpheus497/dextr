@@ -22,20 +22,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Minimum Python Version:** Updated minimum Python version from 3.7 to 3.8 (Python 3.7 reached EOL in June 2023)
 - **Version Bump:** Updated project version from 1.2.0 to 1.3.0 across all files
 - **Python Type Hints:** Completed type annotations across all modules (cli.py, config.py, validation.py) for improved IDE support and static analysis
 - **Configuration Module:** Replaced custom TOML parser with tomli library for Python < 3.11, using built-in tomllib for Python 3.11+
 - **TOML Configuration:** Enhanced config file support with compression options and password storage preferences
 - **MANIFEST.in:** Updated to include examples and documentation directories in source distribution
-- **Dependencies:** Added tomli>=2.0.0 (conditional on Python < 3.11), bandit>=1.7.0, safety>=2.3.0, coverage>=7.0.0
+- **Dependencies:** Updated cryptography to >=41.0.0 for broader compatibility; added tomli>=2.0.0 (conditional on Python < 3.11), bandit>=1.7.0, safety>=2.3.0, coverage>=7.0.0
 - **CLI Module:** Fixed type hint error (Optional[any] → Optional[Any]) for better type checking
 - **Streaming Module:** Marked as deprecated and moved to experimental subdirectory due to incomplete implementation
 
 ### Fixed
 
+- **Security B202 HIGH:** Fixed unsafe tarfile.extractall in experimental/streaming.py by implementing path validation and sanitization
+- **Python 3.7/3.8 Compatibility:** Fixed type hint syntax (list[Path] → List[Path]) in experimental module for Python 3.8 compatibility
 - **Type Hint Error:** Fixed invalid type hint in cli.py line 85 (lowercase 'any' changed to proper 'Any' type)
 - **MANIFEST.in Syntax:** Corrected exclusion syntax for .dev-docs directory (exclude → global-exclude)
 - **Windows Permission Handling:** Improved error handling for Windows ACL operations in validation module
+- **Missing __main__.py:** Added missing __main__.py to enable 'python -m dextr' execution
 
 ### Deprecated
 

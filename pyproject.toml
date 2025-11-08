@@ -9,7 +9,7 @@ description = "Secure archiving and encryption system with multi-layer AEAD prot
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "orpheus497"}]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -18,7 +18,6 @@ classifiers = [
     "Topic :: System :: Archiving :: Backup",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -59,7 +58,7 @@ Issues = "https://github.com/orpheus497/dextr/issues"
 
 [tool.black]
 line-length = 100
-target-version = ["py37", "py38", "py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311", "py312"]
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -76,7 +75,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

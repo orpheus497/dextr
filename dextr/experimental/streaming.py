@@ -25,7 +25,7 @@ import struct
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import Optional, Callable, BinaryIO, Iterator
+from typing import Optional, Callable, BinaryIO, Iterator, List
 
 try:
     from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
@@ -311,7 +311,7 @@ def read_file_stream(input_path: Path, chunk_size: int = DEFAULT_CHUNK_SIZE) -> 
 
 
 def create_tar_to_stream(
-    paths: list[Path],
+    paths: List[Path],
     progress_callback: Optional[Callable[[int], None]] = None
 ) -> Iterator[bytes]:
     """
