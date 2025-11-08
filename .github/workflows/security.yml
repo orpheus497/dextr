@@ -32,9 +32,8 @@ jobs:
 
       - name: Run Bandit security linter
         run: |
-          bandit -r dextr/ -ll -f json -o bandit-report.json
-          bandit -r dextr/ -ll
-        continue-on-error: true
+          bandit -r dextr/ -ll -f json -o bandit-report.json || true
+          bandit -r dextr/ -ll || true
 
       - name: Check dependencies for vulnerabilities with Safety
         run: |

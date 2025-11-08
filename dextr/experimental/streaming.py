@@ -37,6 +37,8 @@ except ImportError:
     )
 
 from dextr.logging_config import get_logger
+from dextr.validation import sanitize_archive_member
+from dextr.exceptions import ValidationError
 
 
 logger = get_logger(__name__)
@@ -386,10 +388,23 @@ def extract_tar_from_stream(
                 if progress_callback:
                     progress_callback(bytes_written)
 
-        # Extract archive
+        # Extract archive with path validation
         with tarfile.open(temp_path, mode='r:xz') as tar:
-            tar.extractall(path=output_dir)
-            logger.debug(f"Extracted archive to: {output_dir}")
+            # Validate and sanitize each member before extraction
+            members_to_extract = []
+            for member in tar.getmembers():
+                try:
+                    sanitized_member = sanitize_archive_member(member, output_dir)
+                    members_to_extract.append(sanitized_member)
+                except ValidationError as e:
+                    logger.warning(f"Skipping malicious archive member: {e}")
+                    continue
+
+            # Extract all validated members
+            for member in members_to_extract:
+                tar.extract(member, path=output_dir)
+
+            logger.debug(f"Extracted {len(members_to_extract)} items to {output_dir}")
 
     except tarfile.TarError as e:
         raise StreamingError(f"Failed to extract tar archive: {e}") from e
