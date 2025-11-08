@@ -8,7 +8,7 @@ It uses a portable key file-based system, offering a secure alternative to passw
 
 ```
 ╔══════════════════════════════════════════════════╗
-║              D E X T R  v1.1.0                   ║
+║              D E X T R  v1.3.0                   ║
 ║      Secure Archiving & Encryption System        ║
 ║            Created by orpheus497                 ║
 ╚══════════════════════════════════════════════════╝
@@ -85,7 +85,7 @@ Your Files/Folders ──► 1. Archive Creation (.tar.xz using LZMA)
 ## 📦 Installation
 
 ### Requirements
-- Python 3.7 or higher
+- Python 3.8 or higher
 - The `cryptography` library (automatically installed)
 
 ### Option 1: Install with pip (Recommended)
@@ -348,5 +348,7 @@ All dextr exceptions inherit from `DextrError`:
 
 - **Original Concept & Design**: orpheus497
 - **Core Cryptography**: The [cryptography](https://github.com/pyca/cryptography) library, which is licensed under the dual Apache-2.0 and BSD licenses.
+- **Progress Display**: The [tqdm](https://github.com/tqdm/tqdm) library, which is licensed under the MIT License or Mozilla Public License 2.0.
+- **TOML Parsing** (Python < 3.11): The [tomli](https://github.com/hukkin/tomli) library, which is licensed under the MIT License.
 
 This project is provided as-is. While it is built with modern, secure cryptographic primitives, no warranty is provided. Always maintain backups of your original data.

@@ -27,3 +27,12 @@ This project uses the following open-source libraries:
 cryptography (https://github.com/pyca/cryptography)
 License: Apache License 2.0 OR BSD-3-Clause
 Copyright: Python Cryptographic Authority
+
+tqdm (https://github.com/tqdm/tqdm)
+License: MIT License OR Mozilla Public License 2.0 (MPL-2.0)
+Copyright: tqdm developers
+
+tomli (https://github.com/hukkin/tomli)
+License: MIT License
+Copyright: Taneli Hukkinen
+Note: Only used for Python versions < 3.11; Python 3.11+ uses built-in tomllib
