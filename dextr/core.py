@@ -38,6 +38,14 @@ except ImportError:
         "Please install it with: pip install cryptography"
     )
 
+from dextr.exceptions import (
+    DextrError,
+    KeyManagementError,
+    ArchivingError,
+    EncryptionError,
+    DecryptionError,
+    ValidationError
+)
 from dextr.validation import (
     validate_path,
     validate_input_paths,
@@ -46,8 +54,7 @@ from dextr.validation import (
     validate_output_path,
     sanitize_archive_member,
     enforce_key_file_permissions,
-    check_archive_size,
-    ValidationError
+    check_archive_size
 )
 from dextr.logging_config import (
     get_logger,
@@ -84,32 +91,6 @@ HKDF_INFO_STRINGS = [
     b'dextr-layer-3-aes256gcm',
     b'dextr-layer-4-chacha20poly1305',
 ]
-
-
-# --- Custom Exceptions ---
-class DextrError(Exception):
-    """Base exception for all dextr-related errors."""
-    pass
-
-
-class KeyManagementError(DextrError):
-    """Errors related to key file operations."""
-    pass
-
-
-class ArchivingError(DextrError):
-    """Errors related to file archiving."""
-    pass
-
-
-class EncryptionError(DextrError):
-    """Errors occurring during the encryption process."""
-    pass
-
-
-class DecryptionError(DextrError):
-    """Errors occurring during the decryption process."""
-    pass
 
 
 # --- Helper Functions ---

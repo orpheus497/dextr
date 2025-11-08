@@ -54,6 +54,13 @@ tmp_*
 # Development documentation (not for release)
 .dev-docs/
 
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+tests/fixtures/*.dxe
+examples/test_data/*.dxe
+
 # Local configuration
 .local/
 local_config.py

@@ -10,14 +10,9 @@ import os
 import stat
 import tarfile
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
-from dextr.core import DextrError
-
-
-class ValidationError(DextrError):
-    """Errors related to input validation."""
-    pass
+from dextr.exceptions import ValidationError
 
 
 def validate_path(
@@ -319,7 +314,7 @@ def validate_directory_writable(path: Path) -> None:
         raise ValidationError(f"Directory is not writable: {path}")
 
 
-def validate_input_paths(paths: list[Union[str, Path]]) -> list[Path]:
+def validate_input_paths(paths: List[Union[str, Path]]) -> List[Path]:
     """
     Validate a list of input paths for archiving.
 

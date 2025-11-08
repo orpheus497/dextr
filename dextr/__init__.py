@@ -28,9 +28,21 @@ Example usage:
     >>> decrypt_archive('backup.dxe', 'restored/', master_key)
 """
 
-__version__ = '1.2.0'
+# Import version from single source of truth
+from dextr.version import __version__, __version_info__
+
 __author__ = 'orpheus497'
 __license__ = 'MIT'
+
+# Import exceptions
+from dextr.exceptions import (
+    DextrError,
+    KeyManagementError,
+    ArchivingError,
+    EncryptionError,
+    DecryptionError,
+    ValidationError,
+)
 
 # Import core functionality
 from dextr.core import (
@@ -43,13 +55,6 @@ from dextr.core import (
     decrypt_archive,
     get_archive_info,
 
-    # Exceptions
-    DextrError,
-    KeyManagementError,
-    ArchivingError,
-    EncryptionError,
-    DecryptionError,
-
     # Constants (useful for advanced users)
     MAGIC_HEADER,
     FORMAT_VERSION,
@@ -58,13 +63,11 @@ from dextr.core import (
     MASTER_KEY_SIZE,
 )
 
-# Import validation errors
-from dextr.validation import ValidationError
-
 # Define public API
 __all__ = [
     # Version info
     '__version__',
+    '__version_info__',
     '__author__',
     '__license__',
 
