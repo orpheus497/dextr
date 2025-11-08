@@ -38,7 +38,7 @@ from dextr.exceptions import (
     ArchivingError,
     EncryptionError,
     DecryptionError,
-    ValidationError
+    ValidationError,
 )
 from dextr.validation import (
     validate_path,
@@ -48,19 +48,19 @@ from dextr.validation import (
     validate_output_path,
     sanitize_archive_member,
     enforce_key_file_permissions,
-    check_archive_size
+    check_archive_size,
 )
 from dextr.logging_config import (
     get_logger,
     log_security_event,
     log_operation_start,
     log_operation_complete,
-    log_operation_error
+    log_operation_error,
 )
 from dextr.key_protection import (
     encrypt_key_with_password,
     decrypt_key_with_password,
-    is_password_protected
+    is_password_protected,
 )
 
 
@@ -69,14 +69,14 @@ logger = get_logger(__name__)
 
 
 # --- Constants ---
-MAGIC_HEADER = b'DEXTR'
+MAGIC_HEADER = b"DEXTR"
 FORMAT_VERSION = 2  # Version 2 introduces archiving
 KEY_ID_SIZE = 16
 SALT_SIZE = 32
-HEADER_FORMAT = f'<{len(MAGIC_HEADER)}sB{KEY_ID_SIZE}s{SALT_SIZE}s'
+HEADER_FORMAT = f"<{len(MAGIC_HEADER)}sB{KEY_ID_SIZE}s{SALT_SIZE}s"
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
-KEY_FILE_MAGIC = 'DEXTR_KEY'
+KEY_FILE_MAGIC = "DEXTR_KEY"
 KEY_FILE_VERSION = 1
 MASTER_KEY_SIZE = 64  # 512 bits
 
@@ -85,10 +85,10 @@ NUM_CRYPTO_LAYERS = 4
 NONCE_SIZE = 12
 
 HKDF_INFO_STRINGS = [
-    b'dextr-layer-1-chacha20poly1305',
-    b'dextr-layer-2-aes256gcm',
-    b'dextr-layer-3-aes256gcm',
-    b'dextr-layer-4-chacha20poly1305',
+    b"dextr-layer-1-chacha20poly1305",
+    b"dextr-layer-2-aes256gcm",
+    b"dextr-layer-3-aes256gcm",
+    b"dextr-layer-4-chacha20poly1305",
 ]
 
 
@@ -112,13 +112,11 @@ def _atomic_write(data: bytes, path: Path) -> None:
     try:
         # Create temporary file in same directory for atomic rename
         temp_fd, temp_path = tempfile.mkstemp(
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp"
+            dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
         )
 
         # Write data
-        with os.fdopen(temp_fd, 'wb') as f:
+        with os.fdopen(temp_fd, "wb") as f:
             temp_fd = None  # fd now owned by file object
             f.write(data)
             f.flush()
@@ -170,7 +168,7 @@ def generate_key_file(
     path: str,
     username: Optional[str] = None,
     enforce_permissions: bool = True,
-    password: Optional[str] = None
+    password: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a new encryption key file.
@@ -219,10 +217,7 @@ def generate_key_file(
         }
 
         # Create key file data
-        key_file_data = {
-            "metadata": metadata,
-            "master_key": master_key.hex()
-        }
+        key_file_data = {"metadata": metadata, "master_key": master_key.hex()}
 
         # Optionally encrypt with password
         if password:
@@ -231,12 +226,10 @@ def generate_key_file(
 
         # Write to file
         try:
-            json_data = json.dumps(key_file_data, indent=2).encode('utf-8')
+            json_data = json.dumps(key_file_data, indent=2).encode("utf-8")
             _atomic_write(json_data, key_path)
         except IOError as e:
-            raise KeyManagementError(
-                f"Failed to write key file to {key_path}: {e}"
-            ) from e
+            raise KeyManagementError(f"Failed to write key file to {key_path}: {e}") from e
 
         # Set restrictive permissions
         if enforce_permissions:
@@ -248,9 +241,7 @@ def generate_key_file(
 
         # Log security event
         log_security_event(
-            "key_generated",
-            {"path": str(key_path), "key_id": metadata["key_id"]},
-            level="INFO"
+            "key_generated", {"path": str(key_path), "key_id": metadata["key_id"]}, level="INFO"
         )
 
         log_operation_complete("generate_key_file", path=str(key_path))
@@ -285,14 +276,12 @@ def load_key_file(path: str, password: Optional[str] = None) -> Tuple[bytes, Dic
 
         # Read file
         try:
-            with open(key_path, 'r', encoding='utf-8') as f:
+            with open(key_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except FileNotFoundError:
             raise KeyManagementError(f"Key file not found: {key_path}")
         except (json.JSONDecodeError, IOError) as e:
-            raise KeyManagementError(
-                f"Failed to read or parse key file: {e}"
-            ) from e
+            raise KeyManagementError(f"Failed to read or parse key file: {e}") from e
 
         # Check if password-protected
         if is_password_protected(data):
@@ -313,17 +302,13 @@ def load_key_file(path: str, password: Optional[str] = None) -> Tuple[bytes, Dic
             raise KeyManagementError("Invalid key file: incorrect magic number.")
 
         if not master_key_hex or not isinstance(master_key_hex, str):
-            raise KeyManagementError(
-                "Invalid key file: master key is missing or malformed."
-            )
+            raise KeyManagementError("Invalid key file: master key is missing or malformed.")
 
         # Decode master key
         try:
             master_key = bytes.fromhex(master_key_hex)
         except ValueError as e:
-            raise KeyManagementError(
-                f"Invalid key file: master key is not valid hex. {e}"
-            ) from e
+            raise KeyManagementError(f"Invalid key file: master key is not valid hex. {e}") from e
 
         # Validate key size
         if len(master_key) != MASTER_KEY_SIZE:
@@ -334,15 +319,11 @@ def load_key_file(path: str, password: Optional[str] = None) -> Tuple[bytes, Dic
         # Verify key ID matches
         expected_key_id = hashlib.sha256(master_key).digest()[:KEY_ID_SIZE].hex()
         if metadata.get("key_id") != expected_key_id:
-            raise KeyManagementError(
-                "Key ID does not match master key. The file may be corrupt."
-            )
+            raise KeyManagementError("Key ID does not match master key. The file may be corrupt.")
 
         # Log security event
         log_security_event(
-            "key_loaded",
-            {"path": str(key_path), "key_id": metadata.get("key_id")},
-            level="INFO"
+            "key_loaded", {"path": str(key_path), "key_id": metadata.get("key_id")}, level="INFO"
         )
 
         log_operation_complete("load_key_file", path=str(key_path))
@@ -370,10 +351,7 @@ def _derive_layer_keys(master_key: bytes, salt: bytes) -> List[bytes]:
     derived_keys = []
     for i in range(NUM_CRYPTO_LAYERS):
         hkdf = HKDF(
-            algorithm=hashes.SHA256(),
-            length=LAYER_KEY_SIZE,
-            salt=salt,
-            info=HKDF_INFO_STRINGS[i]
+            algorithm=hashes.SHA256(), length=LAYER_KEY_SIZE, salt=salt, info=HKDF_INFO_STRINGS[i]
         )
         derived_keys.append(hkdf.derive(master_key))
 
@@ -386,7 +364,7 @@ def encrypt_paths(
     out_path: str,
     master_key: bytes,
     max_size: Optional[int] = None,
-    progress_callback: Optional[Callable[[str, int, int], None]] = None
+    progress_callback: Optional[Callable[[str, int, int], None]] = None,
 ) -> None:
     """
     Archive and encrypt files/directories into a single encrypted archive.
@@ -403,11 +381,7 @@ def encrypt_paths(
         ArchivingError: If archiving fails
         EncryptionError: If encryption fails
     """
-    log_operation_start(
-        "encrypt_paths",
-        num_paths=len(in_paths),
-        output=out_path
-    )
+    log_operation_start("encrypt_paths", num_paths=len(in_paths), output=out_path)
 
     temp_fd = None
     temp_path = None
@@ -426,7 +400,7 @@ def encrypt_paths(
         temp_fd, temp_path = _create_secure_temp_file(suffix=".tar.xz")
 
         try:
-            with tarfile.open(fileobj=os.fdopen(temp_fd, 'wb'), mode='w:xz') as tar:
+            with tarfile.open(fileobj=os.fdopen(temp_fd, "wb"), mode="w:xz") as tar:
                 temp_fd = None  # fd now owned by tarfile
 
                 for i, path in enumerate(validated_paths):
@@ -440,15 +414,13 @@ def encrypt_paths(
                             progress_callback("Creating archive", progress, 100)
 
                     except Exception as e:
-                        raise ArchivingError(
-                            f"Failed to add '{path}' to archive: {e}"
-                        ) from e
+                        raise ArchivingError(f"Failed to add '{path}' to archive: {e}") from e
 
         except tarfile.TarError as e:
             raise ArchivingError(f"Failed to create tar archive: {e}") from e
 
         # Read archive data
-        with open(temp_path, 'rb') as f:
+        with open(temp_path, "rb") as f:
             archive_data = f.read()
 
         archive_size = len(archive_data)
@@ -483,7 +455,7 @@ def encrypt_paths(
             ChaCha20Poly1305(layer_keys[0]),
             AESGCM(layer_keys[1]),
             AESGCM(layer_keys[2]),
-            ChaCha20Poly1305(layer_keys[3])
+            ChaCha20Poly1305(layer_keys[3]),
         ]
 
         # Stage 4: Apply encryption layers
@@ -501,9 +473,7 @@ def encrypt_paths(
                 logger.debug(f"Applied encryption layer {i+1}")
 
         except Exception as e:
-            raise EncryptionError(
-                f"An error occurred during encryption layer: {e}"
-            ) from e
+            raise EncryptionError(f"An error occurred during encryption layer: {e}") from e
 
         # Stage 5: Create final file with header
         if progress_callback:
@@ -528,16 +498,12 @@ def encrypt_paths(
             {
                 "output": str(output_path),
                 "size": len(final_data),
-                "num_inputs": len(validated_paths)
+                "num_inputs": len(validated_paths),
             },
-            level="INFO"
+            level="INFO",
         )
 
-        log_operation_complete(
-            "encrypt_paths",
-            output=str(output_path),
-            size=len(final_data)
-        )
+        log_operation_complete("encrypt_paths", output=str(output_path), size=len(final_data))
 
     except (ValidationError, ArchivingError, EncryptionError):
         raise
@@ -565,7 +531,7 @@ def decrypt_archive(
     in_path: str,
     out_dir: str,
     master_key: bytes,
-    progress_callback: Optional[Callable[[str, int, int], None]] = None
+    progress_callback: Optional[Callable[[str, int, int], None]] = None,
 ) -> None:
     """
     Decrypt and extract an encrypted archive.
@@ -588,11 +554,7 @@ def decrypt_archive(
     try:
         # Validate inputs
         archive_path = validate_archive_file(in_path, for_output=False)
-        output_dir = validate_path(
-            out_dir,
-            must_exist=False,
-            parent_must_exist=False
-        )
+        output_dir = validate_path(out_dir, must_exist=False, parent_must_exist=False)
 
         # Create output directory if it doesn't exist
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -603,7 +565,7 @@ def decrypt_archive(
             progress_callback("Reading archive", 0, 100)
 
         try:
-            with open(archive_path, 'rb') as f:
+            with open(archive_path, "rb") as f:
                 encrypted_data = f.read()
         except IOError as e:
             raise DecryptionError(f"Failed to read input file: {e}") from e
@@ -616,9 +578,7 @@ def decrypt_archive(
             progress_callback("Parsing header", 5, 100)
 
         if len(encrypted_data) < HEADER_SIZE:
-            raise DecryptionError(
-                "Invalid file: content is smaller than the minimum header size."
-            )
+            raise DecryptionError("Invalid file: content is smaller than the minimum header size.")
 
         header = encrypted_data[:HEADER_SIZE]
         ciphertext = encrypted_data[HEADER_SIZE:]
@@ -637,9 +597,7 @@ def decrypt_archive(
         # Verify key
         expected_key_id = hashlib.sha256(master_key).digest()[:KEY_ID_SIZE]
         if key_id != expected_key_id:
-            raise DecryptionError(
-                "Key mismatch. This key file cannot decrypt this file."
-            )
+            raise DecryptionError("Key mismatch. This key file cannot decrypt this file.")
 
         logger.debug(f"Header validated: version={version}, key_id={key_id.hex()[:16]}...")
 
@@ -654,7 +612,7 @@ def decrypt_archive(
             ChaCha20Poly1305(layer_keys[0]),
             AESGCM(layer_keys[1]),
             AESGCM(layer_keys[2]),
-            ChaCha20Poly1305(layer_keys[3])
+            ChaCha20Poly1305(layer_keys[3]),
         ]
 
         # Stage 4: Decrypt layers
@@ -666,9 +624,7 @@ def decrypt_archive(
                 if progress_callback:
                     progress = 15 + int((i / len(ciphers)) * 40)
                     progress_callback(
-                        f"Decrypting layer {len(ciphers)-i}/{len(ciphers)}",
-                        progress,
-                        100
+                        f"Decrypting layer {len(ciphers)-i}/{len(ciphers)}", progress, 100
                     )
 
                 nonce = data[:NONCE_SIZE]
@@ -681,9 +637,7 @@ def decrypt_archive(
                 "The file is corrupt or has been tampered with."
             )
         except Exception as e:
-            raise DecryptionError(
-                f"An error occurred during decryption layer: {e}"
-            ) from e
+            raise DecryptionError(f"An error occurred during decryption layer: {e}") from e
 
         # Stage 5: Decompress
         if progress_callback:
@@ -705,13 +659,13 @@ def decrypt_archive(
 
         try:
             # Write decompressed data to temp file
-            with os.fdopen(temp_fd, 'wb') as f:
+            with os.fdopen(temp_fd, "wb") as f:
                 temp_fd = None  # fd now owned by file object
                 f.write(archive_data)
                 f.flush()
 
             # Extract with path validation
-            with tarfile.open(temp_path, mode='r:xz') as tar:
+            with tarfile.open(temp_path, mode="r:xz") as tar:
                 # Validate and sanitize each member before extraction
                 members_to_extract = []
                 for member in tar.getmembers():
@@ -726,9 +680,7 @@ def decrypt_archive(
                 for member in members_to_extract:
                     tar.extract(member, path=output_dir)
 
-                logger.info(
-                    f"Extracted {len(members_to_extract)} items to {output_dir}"
-                )
+                logger.info(f"Extracted {len(members_to_extract)} items to {output_dir}")
 
         except tarfile.TarError as e:
             raise DecryptionError(f"Failed to extract archive: {e}") from e
@@ -741,16 +693,12 @@ def decrypt_archive(
             {
                 "input": str(archive_path),
                 "output": str(output_dir),
-                "num_extracted": len(members_to_extract)
+                "num_extracted": len(members_to_extract),
             },
-            level="INFO"
+            level="INFO",
         )
 
-        log_operation_complete(
-            "decrypt_archive",
-            input=str(archive_path),
-            output=str(output_dir)
-        )
+        log_operation_complete("decrypt_archive", input=str(archive_path), output=str(output_dir))
 
     except (ValidationError, DecryptionError):
         raise
@@ -790,7 +738,7 @@ def get_archive_info(path: str) -> Dict[str, Any]:
     try:
         archive_path = validate_archive_file(path, for_output=False)
 
-        with open(archive_path, 'rb') as f:
+        with open(archive_path, "rb") as f:
             header_data = f.read(HEADER_SIZE)
 
         if len(header_data) < HEADER_SIZE:
@@ -808,18 +756,14 @@ def get_archive_info(path: str) -> Dict[str, Any]:
             "key_id": key_id.hex(),
             "salt": salt.hex(),
             "file_size": file_size,
-            "encrypted_size": file_size - HEADER_SIZE
+            "encrypted_size": file_size - HEADER_SIZE,
         }
 
     except Exception as e:
         raise DecryptionError(f"Failed to read archive info: {e}") from e
 
 
-def check_archive_integrity(
-    in_path: str,
-    master_key: bytes,
-    quick: bool = False
-) -> Dict[str, Any]:
+def check_archive_integrity(in_path: str, master_key: bytes, quick: bool = False) -> Dict[str, Any]:
     """
     Check the integrity of an encrypted archive.
 
@@ -848,12 +792,12 @@ def check_archive_integrity(
     log_operation_start("check_archive_integrity", input=in_path, quick=quick)
 
     result = {
-        'valid': False,
-        'header_valid': False,
-        'key_match': False,
-        'decrypt_success': False,
-        'full_decrypt_success': False,
-        'error': None
+        "valid": False,
+        "header_valid": False,
+        "key_match": False,
+        "decrypt_success": False,
+        "full_decrypt_success": False,
+        "error": None,
     }
 
     try:
@@ -864,10 +808,10 @@ def check_archive_integrity(
 
         # Read encrypted file
         try:
-            with open(archive_path, 'rb') as f:
+            with open(archive_path, "rb") as f:
                 encrypted_data = f.read()
         except IOError as e:
-            result['error'] = f"Failed to read archive: {e}"
+            result["error"] = f"Failed to read archive: {e}"
             return result
 
         total_size = len(encrypted_data)
@@ -875,7 +819,7 @@ def check_archive_integrity(
 
         # Check header
         if len(encrypted_data) < HEADER_SIZE:
-            result['error'] = "Archive too small (header incomplete)"
+            result["error"] = "Archive too small (header incomplete)"
             return result
 
         header = encrypted_data[:HEADER_SIZE]
@@ -884,22 +828,22 @@ def check_archive_integrity(
 
         # Validate header
         if magic != MAGIC_HEADER:
-            result['error'] = "Invalid magic number in header"
+            result["error"] = "Invalid magic number in header"
             return result
 
-        result['header_valid'] = True
+        result["header_valid"] = True
 
         if version > FORMAT_VERSION:
-            result['error'] = f"Unsupported format version: {version}"
+            result["error"] = f"Unsupported format version: {version}"
             return result
 
         # Verify key matches
         expected_key_id = hashlib.sha256(master_key).digest()[:KEY_ID_SIZE]
         if key_id != expected_key_id:
-            result['error'] = "Key ID mismatch - wrong key provided"
+            result["error"] = "Key ID mismatch - wrong key provided"
             return result
 
-        result['key_match'] = True
+        result["key_match"] = True
 
         # Derive keys
         layer_keys = _derive_layer_keys(master_key, salt)
@@ -909,7 +853,7 @@ def check_archive_integrity(
             ChaCha20Poly1305(layer_keys[0]),
             AESGCM(layer_keys[1]),
             AESGCM(layer_keys[2]),
-            ChaCha20Poly1305(layer_keys[3])
+            ChaCha20Poly1305(layer_keys[3]),
         ]
 
         # Decrypt layers
@@ -921,14 +865,14 @@ def check_archive_integrity(
                 cipher = ciphers[3]  # Last cipher for first layer
                 nonce = data[:NONCE_SIZE]
                 data = cipher.decrypt(nonce, data[NONCE_SIZE:], None)
-                result['decrypt_success'] = True
-                result['valid'] = True
+                result["decrypt_success"] = True
+                result["valid"] = True
                 logger.info("Quick integrity check passed")
             except InvalidTag:
-                result['error'] = "First decryption layer failed - data corrupted or wrong key"
+                result["error"] = "First decryption layer failed - data corrupted or wrong key"
                 return result
             except Exception as e:
-                result['error'] = f"Decryption error: {e}"
+                result["error"] = f"Decryption error: {e}"
                 return result
 
         else:
@@ -939,33 +883,33 @@ def check_archive_integrity(
                     data = cipher.decrypt(nonce, data[NONCE_SIZE:], None)
                     logger.debug(f"Decrypted layer {len(ciphers)-i}")
 
-                result['decrypt_success'] = True
+                result["decrypt_success"] = True
 
                 # Try to decompress
                 try:
                     decompressed = zlib.decompress(data)
                     logger.debug(f"Decompressed: {len(decompressed)} bytes")
-                    result['full_decrypt_success'] = True
-                    result['valid'] = True
+                    result["full_decrypt_success"] = True
+                    result["valid"] = True
                     logger.info("Full integrity check passed")
                 except zlib.error as e:
-                    result['error'] = f"Decompression failed: {e}"
+                    result["error"] = f"Decompression failed: {e}"
                     return result
 
             except InvalidTag:
-                result['error'] = "Decryption failed - data corrupted or tampered"
+                result["error"] = "Decryption failed - data corrupted or tampered"
                 return result
             except Exception as e:
-                result['error'] = f"Decryption error: {e}"
+                result["error"] = f"Decryption error: {e}"
                 return result
 
-        log_operation_complete("check_archive_integrity", valid=result['valid'])
+        log_operation_complete("check_archive_integrity", valid=result["valid"])
         return result
 
     except ValidationError as e:
-        result['error'] = str(e)
+        result["error"] = str(e)
         raise
     except Exception as e:
-        result['error'] = str(e)
+        result["error"] = str(e)
         log_operation_error("check_archive_integrity", e, input=in_path)
         raise DecryptionError(f"Integrity check failed: {e}") from e

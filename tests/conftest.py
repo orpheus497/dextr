@@ -81,7 +81,7 @@ def test_files(temp_dir):
 
     # Create a binary file
     file2 = temp_dir / "test2.bin"
-    file2.write_bytes(b'\x00\x01\x02\x03\x04\x05' * 100)
+    file2.write_bytes(b"\x00\x01\x02\x03\x04\x05" * 100)
     files.append(str(file2))
 
     # Create a subdirectory with files
@@ -133,7 +133,7 @@ def large_file(temp_dir):
     """
     large = temp_dir / "large.bin"
     # Write 10 MB of data
-    with open(large, 'wb') as f:
+    with open(large, "wb") as f:
         for _ in range(10):
             f.write(os.urandom(1024 * 1024))  # 1 MB at a time
     return str(large)
@@ -185,11 +185,12 @@ def assert_files_equal(file1: Path, file2: Path):
     assert file2.exists(), f"File {file2} does not exist"
 
     # Compare file sizes first (fast check)
-    assert file1.stat().st_size == file2.stat().st_size, \
-        f"File sizes differ: {file1.stat().st_size} vs {file2.stat().st_size}"
+    assert (
+        file1.stat().st_size == file2.stat().st_size
+    ), f"File sizes differ: {file1.stat().st_size} vs {file2.stat().st_size}"
 
     # Compare content
-    with open(file1, 'rb') as f1, open(file2, 'rb') as f2:
+    with open(file1, "rb") as f1, open(file2, "rb") as f2:
         chunk_size = 8192
         while True:
             chunk1 = f1.read(chunk_size)
@@ -215,8 +216,8 @@ def assert_directories_equal(dir1: Path, dir2: Path, ignore_permissions: bool = 
     dir2 = Path(dir2)
 
     # Get all files in both directories
-    files1 = sorted([p.relative_to(dir1) for p in dir1.rglob('*') if p.is_file()])
-    files2 = sorted([p.relative_to(dir2) for p in dir2.rglob('*') if p.is_file()])
+    files1 = sorted([p.relative_to(dir1) for p in dir1.rglob("*") if p.is_file()])
+    files2 = sorted([p.relative_to(dir2) for p in dir2.rglob("*") if p.is_file()])
 
     assert files1 == files2, f"Directory structures differ:\n{files1}\nvs\n{files2}"
 

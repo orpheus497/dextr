@@ -13,6 +13,7 @@ class DextrError(Exception):
     All custom exceptions in the dextr package inherit from this base class,
     allowing users to catch all dextr-specific errors with a single except clause.
     """
+
     pass
 
 
@@ -26,6 +27,7 @@ class KeyManagementError(DextrError):
     - Key file has invalid format or content
     - Key file permissions cannot be set
     """
+
     pass
 
 
@@ -39,6 +41,7 @@ class ArchivingError(DextrError):
     - Archive format is invalid
     - Temporary archive operations fail
     """
+
     pass
 
 
@@ -52,6 +55,7 @@ class EncryptionError(DextrError):
     - Output file cannot be written
     - Compression fails
     """
+
     pass
 
 
@@ -67,6 +71,7 @@ class DecryptionError(DextrError):
     - Archive extraction fails
     - Archive format version is unsupported
     """
+
     pass
 
 
@@ -81,15 +86,16 @@ class ValidationError(DextrError):
     - Archive size exceeds limits
     - Malicious archive members are detected
     """
+
     pass
 
 
 # For backward compatibility and convenience, export all exceptions
 __all__ = [
-    'DextrError',
-    'KeyManagementError',
-    'ArchivingError',
-    'EncryptionError',
-    'DecryptionError',
-    'ValidationError',
+    "DextrError",
+    "KeyManagementError",
+    "ArchivingError",
+    "EncryptionError",
+    "DecryptionError",
+    "ValidationError",
 ]

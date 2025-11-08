@@ -45,6 +45,7 @@ DEFAULT_CHUNK_SIZE = 64 * 1024 * 1024  # 64 MB
 
 class StreamingError(Exception):
     """Errors related to streaming operations."""
+
     pass
 
 
@@ -70,7 +71,7 @@ def stream_encrypt_layer(
     input_stream: Iterator[bytes],
     cipher,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
-    progress_callback: Optional[Callable[[int], None]] = None
+    progress_callback: Optional[Callable[[int], None]] = None,
 ) -> Iterator[bytes]:
     """
     Encrypt a stream of data with a single encryption layer.
@@ -111,7 +112,7 @@ def stream_decrypt_layer(
     input_stream: Iterator[bytes],
     cipher,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
-    progress_callback: Optional[Callable[[int], None]] = None
+    progress_callback: Optional[Callable[[int], None]] = None,
 ) -> Iterator[bytes]:
     """
     Decrypt a stream of data from a single encryption layer.
@@ -128,7 +129,7 @@ def stream_decrypt_layer(
         Decrypted chunks
     """
     bytes_processed = 0
-    buffer = b''
+    buffer = b""
 
     for chunk in input_stream:
         buffer += chunk
@@ -160,7 +161,7 @@ def stream_decrypt_layer(
                         continue
 
                     try:
-                        encrypted_data = buffer[NONCE_SIZE:NONCE_SIZE + try_size]
+                        encrypted_data = buffer[NONCE_SIZE : NONCE_SIZE + try_size]
                         decrypted = cipher.decrypt(nonce, encrypted_data, None)
                         encrypted_size = try_size
                         break  # Successfully decrypted
@@ -175,7 +176,7 @@ def stream_decrypt_layer(
                 yield decrypted
 
                 # Remove processed data from buffer
-                buffer = buffer[NONCE_SIZE + encrypted_size:]
+                buffer = buffer[NONCE_SIZE + encrypted_size :]
 
                 # Update progress
                 bytes_processed += len(decrypted)
@@ -187,15 +188,13 @@ def stream_decrypt_layer(
 
     # Check if there's leftover data that couldn't be decrypted
     if len(buffer) > 0:
-        raise StreamingError(
-            f"Incomplete encrypted data in stream ({len(buffer)} bytes remaining)"
-        )
+        raise StreamingError(f"Incomplete encrypted data in stream ({len(buffer)} bytes remaining)")
 
 
 def compress_stream(
     input_stream: Iterator[bytes],
     level: int = 9,
-    progress_callback: Optional[Callable[[int], None]] = None
+    progress_callback: Optional[Callable[[int], None]] = None,
 ) -> Iterator[bytes]:
     """
     Compress a stream of data using zlib.
@@ -227,8 +226,7 @@ def compress_stream(
 
 
 def decompress_stream(
-    input_stream: Iterator[bytes],
-    progress_callback: Optional[Callable[[int], None]] = None
+    input_stream: Iterator[bytes], progress_callback: Optional[Callable[[int], None]] = None
 ) -> Iterator[bytes]:
     """
     Decompress a stream of data using zlib.
@@ -276,7 +274,7 @@ def write_stream_to_file(stream: Iterator[bytes], output_path: Path) -> int:
     total_bytes = 0
 
     try:
-        with open(output_path, 'wb') as f:
+        with open(output_path, "wb") as f:
             for chunk in stream:
                 f.write(chunk)
                 total_bytes += len(chunk)
@@ -298,15 +296,14 @@ def read_file_stream(input_path: Path, chunk_size: int = DEFAULT_CHUNK_SIZE) -> 
         File data chunks
     """
     try:
-        with open(input_path, 'rb') as f:
+        with open(input_path, "rb") as f:
             yield from chunked_read(f, chunk_size)
     except IOError as e:
         raise StreamingError(f"Failed to read file: {e}") from e
 
 
 def create_tar_to_stream(
-    paths: List[Path],
-    progress_callback: Optional[Callable[[int], None]] = None
+    paths: List[Path], progress_callback: Optional[Callable[[int], None]] = None
 ) -> Iterator[bytes]:
     """
     Create a tar.xz archive and stream it.
@@ -330,7 +327,7 @@ def create_tar_to_stream(
         temp_fd, temp_path = tempfile.mkstemp(suffix=".tar.xz")
 
         # Create archive
-        with tarfile.open(fileobj=os.fdopen(temp_fd, 'wb'), mode='w:xz') as tar:
+        with tarfile.open(fileobj=os.fdopen(temp_fd, "wb"), mode="w:xz") as tar:
             for path in paths:
                 tar.add(path, arcname=os.path.basename(str(path)))
                 logger.debug(f"Added to archive: {path}")
@@ -353,7 +350,7 @@ def create_tar_to_stream(
 def extract_tar_from_stream(
     stream: Iterator[bytes],
     output_dir: Path,
-    progress_callback: Optional[Callable[[int], None]] = None
+    progress_callback: Optional[Callable[[int], None]] = None,
 ) -> None:
     """
     Extract a tar.xz archive from a stream.
@@ -374,7 +371,7 @@ def extract_tar_from_stream(
         # Write stream to temporary file
         temp_fd, temp_path = tempfile.mkstemp(suffix=".tar.xz")
 
-        with os.fdopen(temp_fd, 'wb') as f:
+        with os.fdopen(temp_fd, "wb") as f:
             bytes_written = 0
             for chunk in stream:
                 f.write(chunk)
@@ -383,7 +380,7 @@ def extract_tar_from_stream(
                     progress_callback(bytes_written)
 
         # Extract archive with path validation
-        with tarfile.open(temp_path, mode='r:xz') as tar:
+        with tarfile.open(temp_path, mode="r:xz") as tar:
             # Validate and sanitize each member before extraction
             members_to_extract = []
             for member in tar.getmembers():

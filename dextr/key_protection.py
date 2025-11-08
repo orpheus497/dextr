@@ -31,14 +31,16 @@ from dextr.exceptions import KeyManagementError
 
 
 # Constants
-PASSWORD_PROTECTED_MAGIC = 'DEXTR_KEY_PROTECTED'
+PASSWORD_PROTECTED_MAGIC = "DEXTR_KEY_PROTECTED"
 PASSWORD_SALT_SIZE = 32  # 256 bits
 PASSWORD_NONCE_SIZE = 12  # 96 bits for AES-GCM
 PASSWORD_ITERATIONS = 600000  # OWASP recommendation for 2024
 PASSWORD_KEY_SIZE = 32  # 256 bits
 
 
-def _derive_password_key(password: str, salt: bytes, iterations: int = PASSWORD_ITERATIONS) -> bytes:
+def _derive_password_key(
+    password: str, salt: bytes, iterations: int = PASSWORD_ITERATIONS
+) -> bytes:
     """
     Derive an encryption key from a password using PBKDF2-HMAC-SHA256.
 
@@ -50,7 +52,7 @@ def _derive_password_key(password: str, salt: bytes, iterations: int = PASSWORD_
     Returns:
         Derived encryption key (32 bytes)
     """
-    password_bytes = password.encode('utf-8')
+    password_bytes = password.encode("utf-8")
 
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
@@ -63,9 +65,7 @@ def _derive_password_key(password: str, salt: bytes, iterations: int = PASSWORD_
 
 
 def encrypt_key_with_password(
-    key_data: Dict[str, Any],
-    password: str,
-    iterations: int = PASSWORD_ITERATIONS
+    key_data: Dict[str, Any], password: str, iterations: int = PASSWORD_ITERATIONS
 ) -> Dict[str, Any]:
     """
     Encrypt a key file's data with a password.
@@ -93,7 +93,7 @@ def encrypt_key_with_password(
         encryption_key = _derive_password_key(password, salt, iterations)
 
         # Serialize the key data to JSON
-        json_data = json.dumps(key_data).encode('utf-8')
+        json_data = json.dumps(key_data).encode("utf-8")
 
         # Encrypt with AES-GCM
         cipher = AESGCM(encryption_key)
@@ -101,26 +101,21 @@ def encrypt_key_with_password(
 
         # Create protected key structure
         protected_data = {
-            'magic': PASSWORD_PROTECTED_MAGIC,
-            'version': 1,
-            'iterations': iterations,
-            'salt': salt.hex(),
-            'nonce': nonce.hex(),
-            'ciphertext': ciphertext.hex()
+            "magic": PASSWORD_PROTECTED_MAGIC,
+            "version": 1,
+            "iterations": iterations,
+            "salt": salt.hex(),
+            "nonce": nonce.hex(),
+            "ciphertext": ciphertext.hex(),
         }
 
         return protected_data
 
     except Exception as e:
-        raise KeyManagementError(
-            f"Failed to encrypt key with password: {e}"
-        ) from e
+        raise KeyManagementError(f"Failed to encrypt key with password: {e}") from e
 
 
-def decrypt_key_with_password(
-    protected_data: Dict[str, Any],
-    password: str
-) -> Dict[str, Any]:
+def decrypt_key_with_password(protected_data: Dict[str, Any], password: str) -> Dict[str, Any]:
     """
     Decrypt a password-protected key file.
 
@@ -136,22 +131,18 @@ def decrypt_key_with_password(
     """
     try:
         # Validate structure
-        if protected_data.get('magic') != PASSWORD_PROTECTED_MAGIC:
-            raise KeyManagementError(
-                "Invalid protected key file: incorrect magic number"
-            )
+        if protected_data.get("magic") != PASSWORD_PROTECTED_MAGIC:
+            raise KeyManagementError("Invalid protected key file: incorrect magic number")
 
-        version = protected_data.get('version', 1)
+        version = protected_data.get("version", 1)
         if version != 1:
-            raise KeyManagementError(
-                f"Unsupported protected key version: {version}"
-            )
+            raise KeyManagementError(f"Unsupported protected key version: {version}")
 
         # Extract encrypted components
-        iterations = protected_data.get('iterations', PASSWORD_ITERATIONS)
-        salt = bytes.fromhex(protected_data['salt'])
-        nonce = bytes.fromhex(protected_data['nonce'])
-        ciphertext = bytes.fromhex(protected_data['ciphertext'])
+        iterations = protected_data.get("iterations", PASSWORD_ITERATIONS)
+        salt = bytes.fromhex(protected_data["salt"])
+        nonce = bytes.fromhex(protected_data["nonce"])
+        ciphertext = bytes.fromhex(protected_data["ciphertext"])
 
         # Derive decryption key from password
         decryption_key = _derive_password_key(password, salt, iterations)
@@ -161,21 +152,17 @@ def decrypt_key_with_password(
         try:
             plaintext = cipher.decrypt(nonce, ciphertext, None)
         except InvalidTag:
-            raise KeyManagementError(
-                "Incorrect password or corrupted key file"
-            )
+            raise KeyManagementError("Incorrect password or corrupted key file")
 
         # Parse decrypted JSON
-        key_data = json.loads(plaintext.decode('utf-8'))
+        key_data = json.loads(plaintext.decode("utf-8"))
 
         return key_data
 
     except KeyManagementError:
         raise
     except Exception as e:
-        raise KeyManagementError(
-            f"Failed to decrypt key with password: {e}"
-        ) from e
+        raise KeyManagementError(f"Failed to decrypt key with password: {e}") from e
 
 
 def is_password_protected(key_file_data: Dict[str, Any]) -> bool:
@@ -188,13 +175,10 @@ def is_password_protected(key_file_data: Dict[str, Any]) -> bool:
     Returns:
         True if key file is password-protected, False otherwise
     """
-    return key_file_data.get('magic') == PASSWORD_PROTECTED_MAGIC
+    return key_file_data.get("magic") == PASSWORD_PROTECTED_MAGIC
 
 
-def prompt_password(
-    prompt_text: str = "Enter password: ",
-    confirm: bool = False
-) -> str:
+def prompt_password(prompt_text: str = "Enter password: ", confirm: bool = False) -> str:
     """
     Prompt user for a password securely.
 
@@ -254,7 +238,7 @@ def read_password_from_file(file_path: str) -> str:
         if not password_path.is_file():
             raise KeyManagementError(f"Password path is not a file: {file_path}")
 
-        with open(password_path, 'r', encoding='utf-8') as f:
+        with open(password_path, "r", encoding="utf-8") as f:
             password = f.read().strip()
 
         if not password:
@@ -265,9 +249,7 @@ def read_password_from_file(file_path: str) -> str:
     except KeyManagementError:
         raise
     except Exception as e:
-        raise KeyManagementError(
-            f"Failed to read password from file: {e}"
-        ) from e
+        raise KeyManagementError(f"Failed to read password from file: {e}") from e
 
 
 def get_password_strength(password: str) -> Dict[str, Any]:
@@ -325,13 +307,13 @@ def get_password_strength(password: str) -> Dict[str, Any]:
         strength = "strong"
 
     return {
-        'strength': strength,
-        'length': length,
-        'has_upper': has_upper,
-        'has_lower': has_lower,
-        'has_digits': has_digits,
-        'has_special': has_special,
-        'score': score
+        "strength": strength,
+        "length": length,
+        "has_upper": has_upper,
+        "has_lower": has_lower,
+        "has_digits": has_digits,
+        "has_special": has_special,
+        "score": score,
     }
 
 
@@ -350,27 +332,27 @@ def generate_password_hint(password: str, max_hint_length: int = 50) -> str:
 
     hints = []
 
-    if strength_info['length'] < 12:
+    if strength_info["length"] < 12:
         hints.append("consider using at least 12 characters")
 
-    if not strength_info['has_upper']:
+    if not strength_info["has_upper"]:
         hints.append("add uppercase letters")
 
-    if not strength_info['has_lower']:
+    if not strength_info["has_lower"]:
         hints.append("add lowercase letters")
 
-    if not strength_info['has_digits']:
+    if not strength_info["has_digits"]:
         hints.append("add numbers")
 
-    if not strength_info['has_special']:
+    if not strength_info["has_special"]:
         hints.append("add special characters")
 
     if not hints:
         return "Password strength: strong"
 
-    hint = "Password strength: " + strength_info['strength'] + " - " + ", ".join(hints)
+    hint = "Password strength: " + strength_info["strength"] + " - " + ", ".join(hints)
 
     if len(hint) > max_hint_length:
-        hint = hint[:max_hint_length-3] + "..."
+        hint = hint[: max_hint_length - 3] + "..."
 
     return hint

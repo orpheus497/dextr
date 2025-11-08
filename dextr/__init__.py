@@ -31,8 +31,8 @@ Example usage:
 # Import version from single source of truth
 from dextr.version import __version__, __version_info__
 
-__author__ = 'orpheus497'
-__license__ = 'MIT'
+__author__ = "orpheus497"
+__license__ = "MIT"
 
 # Import exceptions
 from dextr.exceptions import (
@@ -49,13 +49,11 @@ from dextr.core import (
     # Key management functions
     generate_key_file,
     load_key_file,
-
     # Encryption/decryption functions
     encrypt_paths,
     decrypt_archive,
     get_archive_info,
     check_archive_integrity,
-
     # Constants (useful for advanced users)
     MAGIC_HEADER,
     FORMAT_VERSION,
@@ -77,39 +75,35 @@ from dextr.key_protection import (
 # Define public API
 __all__ = [
     # Version info
-    '__version__',
-    '__version_info__',
-    '__author__',
-    '__license__',
-
+    "__version__",
+    "__version_info__",
+    "__author__",
+    "__license__",
     # Functions
-    'generate_key_file',
-    'load_key_file',
-    'encrypt_paths',
-    'decrypt_archive',
-    'get_archive_info',
-    'check_archive_integrity',
-
+    "generate_key_file",
+    "load_key_file",
+    "encrypt_paths",
+    "decrypt_archive",
+    "get_archive_info",
+    "check_archive_integrity",
     # Password protection
-    'encrypt_key_with_password',
-    'decrypt_key_with_password',
-    'is_password_protected',
-    'prompt_password',
-    'read_password_from_file',
-    'get_password_strength',
-
+    "encrypt_key_with_password",
+    "decrypt_key_with_password",
+    "is_password_protected",
+    "prompt_password",
+    "read_password_from_file",
+    "get_password_strength",
     # Exceptions
-    'DextrError',
-    'KeyManagementError',
-    'ArchivingError',
-    'EncryptionError',
-    'DecryptionError',
-    'ValidationError',
-
+    "DextrError",
+    "KeyManagementError",
+    "ArchivingError",
+    "EncryptionError",
+    "DecryptionError",
+    "ValidationError",
     # Constants
-    'MAGIC_HEADER',
-    'FORMAT_VERSION',
-    'KEY_FILE_MAGIC',
-    'KEY_FILE_VERSION',
-    'MASTER_KEY_SIZE',
+    "MAGIC_HEADER",
+    "FORMAT_VERSION",
+    "KEY_FILE_MAGIC",
+    "KEY_FILE_VERSION",
+    "MASTER_KEY_SIZE",
 ]

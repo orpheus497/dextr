@@ -21,7 +21,7 @@ def setup_logging(
     log_level: str = "INFO",
     log_file: Optional[str] = None,
     verbose: bool = False,
-    quiet: bool = False
+    quiet: bool = False,
 ) -> None:
     """
     Configure logging for the application.
@@ -41,16 +41,16 @@ def setup_logging(
         effective_level = logging.ERROR
     else:
         level_map = {
-            'DEBUG': logging.DEBUG,
-            'INFO': logging.INFO,
-            'WARNING': logging.WARNING,
-            'ERROR': logging.ERROR,
-            'CRITICAL': logging.CRITICAL
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL,
         }
         effective_level = level_map.get(log_level.upper(), logging.INFO)
 
     # Create root logger
-    root_logger = logging.getLogger('dextr')
+    root_logger = logging.getLogger("dextr")
     root_logger.setLevel(logging.DEBUG)  # Capture everything, handlers filter
 
     # Remove existing handlers
@@ -61,9 +61,7 @@ def setup_logging(
     console_handler.setLevel(effective_level)
 
     # Console format (simpler for user-facing output)
-    console_format = logging.Formatter(
-        fmt='[%(levelname)s] %(message)s'
-    )
+    console_format = logging.Formatter(fmt="[%(levelname)s] %(message)s")
     console_handler.setFormatter(console_format)
     root_logger.addHandler(console_handler)
 
@@ -73,13 +71,13 @@ def setup_logging(
             log_path = Path(log_file)
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
-            file_handler = logging.FileHandler(log_path, mode='a', encoding='utf-8')
+            file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
             file_handler.setLevel(logging.DEBUG)  # Log everything to file
 
             # File format (more detailed)
             file_format = logging.Formatter(
-                fmt='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                fmt="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
             file_handler.setFormatter(file_format)
             root_logger.addHandler(file_handler)
@@ -107,16 +105,12 @@ def get_logger(name: str) -> logging.Logger:
 
     # Return cached logger or create new one
     if name not in _loggers:
-        _loggers[name] = logging.getLogger(f'dextr.{name}')
+        _loggers[name] = logging.getLogger(f"dextr.{name}")
 
     return _loggers[name]
 
 
-def log_security_event(
-    event_type: str,
-    details: Dict[str, Any],
-    level: str = 'INFO'
-) -> None:
+def log_security_event(event_type: str, details: Dict[str, Any], level: str = "INFO") -> None:
     """
     Log a security-relevant event.
 
@@ -125,7 +119,7 @@ def log_security_event(
         details: Event details
         level: Log level (INFO, WARNING, ERROR)
     """
-    logger = get_logger('security')
+    logger = get_logger("security")
 
     # Format message
     message = f"SECURITY EVENT: {event_type}"
@@ -134,11 +128,11 @@ def log_security_event(
 
     # Log at appropriate level
     level_map = {
-        'DEBUG': logger.debug,
-        'INFO': logger.info,
-        'WARNING': logger.warning,
-        'ERROR': logger.error,
-        'CRITICAL': logger.critical
+        "DEBUG": logger.debug,
+        "INFO": logger.info,
+        "WARNING": logger.warning,
+        "ERROR": logger.error,
+        "CRITICAL": logger.critical,
     }
     log_func = level_map.get(level.upper(), logger.info)
     log_func(message)
@@ -152,8 +146,8 @@ def log_operation_start(operation: str, **kwargs: Any) -> None:
         operation: Operation name
         **kwargs: Operation parameters
     """
-    logger = get_logger('operations')
-    params = ' '.join(f"{k}={v}" for k, v in kwargs.items())
+    logger = get_logger("operations")
+    params = " ".join(f"{k}={v}" for k, v in kwargs.items())
     logger.info(f"Starting {operation}: {params}")
 
 
@@ -165,8 +159,8 @@ def log_operation_complete(operation: str, **kwargs: Any) -> None:
         operation: Operation name
         **kwargs: Operation results
     """
-    logger = get_logger('operations')
-    params = ' '.join(f"{k}={v}" for k, v in kwargs.items())
+    logger = get_logger("operations")
+    params = " ".join(f"{k}={v}" for k, v in kwargs.items())
     logger.info(f"Completed {operation}: {params}")
 
 
@@ -179,8 +173,8 @@ def log_operation_error(operation: str, error: Exception, **kwargs: Any) -> None
         error: Exception that occurred
         **kwargs: Error context
     """
-    logger = get_logger('operations')
-    params = ' '.join(f"{k}={v}" for k, v in kwargs.items())
+    logger = get_logger("operations")
+    params = " ".join(f"{k}={v}" for k, v in kwargs.items())
     logger.error(f"Failed {operation}: {error} | {params}", exc_info=True)
 
 
@@ -194,9 +188,9 @@ def format_bytes(size: int) -> str:
     Returns:
         Human-readable size string
     """
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size < 1024.0:
-            if unit == 'B':
+            if unit == "B":
                 return f"{size} {unit}"
             return f"{size:.2f} {unit}"
         size /= 1024.0

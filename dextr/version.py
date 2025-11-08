@@ -5,7 +5,7 @@ Version information for the dextr package.
 This module serves as the single source of truth for version information.
 """
 
-__version__ = '1.3.0'
+__version__ = "1.3.0"
 __version_info__ = (1, 3, 0)
 
 # Version history

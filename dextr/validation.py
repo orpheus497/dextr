@@ -21,7 +21,7 @@ def validate_path(
     must_be_file: bool = False,
     must_be_dir: bool = False,
     allow_symlinks: bool = True,
-    parent_must_exist: bool = False
+    parent_must_exist: bool = False,
 ) -> Path:
     """
     Validate and sanitize a file system path.
@@ -50,7 +50,7 @@ def validate_path(
         raise ValidationError(f"Invalid path: {e}") from e
 
     # Check for null bytes (potential security issue)
-    if '\0' in str(path):
+    if "\0" in str(path):
         raise ValidationError("Path contains null bytes")
 
     # Resolve to absolute path
@@ -104,27 +104,28 @@ def validate_key_file(path: Union[str, Path]) -> Path:
         path,
         must_exist=True,
         must_be_file=True,
-        allow_symlinks=False  # Don't allow symlinks for security
+        allow_symlinks=False,  # Don't allow symlinks for security
     )
 
     # Check file extension
-    if not key_path.suffix == '.dxk':
+    if not key_path.suffix == ".dxk":
         raise ValidationError(f"Key file must have .dxk extension: {key_path}")
 
     # Check file permissions (warn if too permissive on Unix)
-    if hasattr(os, 'stat'):
+    if hasattr(os, "stat"):
         try:
             file_stat = key_path.stat()
             # On Unix-like systems, warn if readable by group or others
-            if hasattr(stat, 'S_IRWXG') and hasattr(stat, 'S_IRWXO'):
+            if hasattr(stat, "S_IRWXG") and hasattr(stat, "S_IRWXO"):
                 mode = file_stat.st_mode
                 if (mode & stat.S_IRWXG) or (mode & stat.S_IRWXO):
                     # This is a warning, not an error
                     import warnings
+
                     warnings.warn(
                         f"Key file has overly permissive permissions: {key_path}. "
                         "Consider running: chmod 600 " + str(key_path),
-                        UserWarning
+                        UserWarning,
                     )
         except OSError:
             pass  # Can't check permissions, continue anyway
@@ -151,20 +152,18 @@ def validate_archive_file(path: Union[str, Path], for_output: bool = False) -> P
         must_exist=not for_output,
         must_be_file=not for_output,
         allow_symlinks=False,
-        parent_must_exist=for_output
+        parent_must_exist=for_output,
     )
 
     # Check file extension
-    if not archive_path.suffix == '.dxe':
+    if not archive_path.suffix == ".dxe":
         raise ValidationError(f"Archive file must have .dxe extension: {archive_path}")
 
     return archive_path
 
 
 def validate_output_path(
-    path: Union[str, Path],
-    is_dir: bool = False,
-    allow_overwrite: bool = False
+    path: Union[str, Path], is_dir: bool = False, allow_overwrite: bool = False
 ) -> Path:
     """
     Validate an output path for writing.
@@ -181,29 +180,21 @@ def validate_output_path(
         ValidationError: If validation fails
     """
     output_path = validate_path(
-        path,
-        must_exist=False,
-        allow_symlinks=False,
-        parent_must_exist=True
+        path, must_exist=False, allow_symlinks=False, parent_must_exist=True
     )
 
     # Check if path already exists
     if output_path.exists():
         if not allow_overwrite:
             raise ValidationError(
-                f"Output path already exists: {output_path}. "
-                "Use --force to overwrite."
+                f"Output path already exists: {output_path}. " "Use --force to overwrite."
             )
 
         # If it exists, verify type matches expectation
         if is_dir and not output_path.is_dir():
-            raise ValidationError(
-                f"Output path exists but is not a directory: {output_path}"
-            )
+            raise ValidationError(f"Output path exists but is not a directory: {output_path}")
         elif not is_dir and output_path.is_dir():
-            raise ValidationError(
-                f"Output path exists but is a directory: {output_path}"
-            )
+            raise ValidationError(f"Output path exists but is a directory: {output_path}")
 
     return output_path
 
@@ -226,10 +217,10 @@ def sanitize_archive_member(member: tarfile.TarInfo, output_dir: Path) -> tarfil
     member_name = member.name
 
     # Remove any leading slashes or drive letters
-    member_name = member_name.lstrip('/\\')
-    if len(member_name) > 1 and member_name[1] == ':':
+    member_name = member_name.lstrip("/\\")
+    if len(member_name) > 1 and member_name[1] == ":":
         # Windows drive letter
-        member_name = member_name[2:].lstrip('/\\')
+        member_name = member_name[2:].lstrip("/\\")
 
     # Resolve the full path
     target_path = (output_dir / member_name).resolve()
@@ -238,21 +229,15 @@ def sanitize_archive_member(member: tarfile.TarInfo, output_dir: Path) -> tarfil
     try:
         target_path.relative_to(output_dir.resolve())
     except ValueError:
-        raise ValidationError(
-            f"Archive member attempts path traversal: {member.name}"
-        ) from None
+        raise ValidationError(f"Archive member attempts path traversal: {member.name}") from None
 
     # Check for suspicious patterns
-    if '..' in Path(member_name).parts:
-        raise ValidationError(
-            f"Archive member contains '..' component: {member.name}"
-        )
+    if ".." in Path(member_name).parts:
+        raise ValidationError(f"Archive member contains '..' component: {member.name}")
 
     # Check for absolute paths (should have been removed above, but double-check)
     if Path(member_name).is_absolute():
-        raise ValidationError(
-            f"Archive member has absolute path: {member.name}"
-        )
+        raise ValidationError(f"Archive member has absolute path: {member.name}")
 
     # Update member name to sanitized version
     member.name = member_name
@@ -274,7 +259,7 @@ def check_archive_size(size: int, max_size: Optional[int] = None) -> None:
     if max_size is not None and size > max_size:
         # Convert to human-readable format
         def format_size(s: int) -> str:
-            for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            for unit in ["B", "KB", "MB", "GB", "TB"]:
                 if s < 1024.0:
                     return f"{s:.2f} {unit}"
                 s /= 1024.0
@@ -333,9 +318,7 @@ def validate_input_paths(paths: List[Union[str, Path]]) -> List[Path]:
     validated = []
     for path in paths:
         validated_path = validate_path(
-            path,
-            must_exist=True,
-            allow_symlinks=True  # Allow symlinks in input
+            path, must_exist=True, allow_symlinks=True  # Allow symlinks in input
         )
 
         # Check if readable
@@ -345,9 +328,7 @@ def validate_input_paths(paths: List[Union[str, Path]]) -> List[Path]:
             # If it's a directory, check if it's traversable
             if validated_path.is_dir():
                 if not os.access(validated_path, os.R_OK | os.X_OK):
-                    raise ValidationError(
-                        f"Directory is not accessible: {validated_path}"
-                    )
+                    raise ValidationError(f"Directory is not accessible: {validated_path}")
             else:
                 raise
 
@@ -367,31 +348,28 @@ def enforce_key_file_permissions(path: Path) -> None:
         path: Path to the key file
     """
     # Unix-like systems
-    if hasattr(os, 'chmod') and hasattr(stat, 'S_IRUSR') and hasattr(stat, 'S_IWUSR'):
+    if hasattr(os, "chmod") and hasattr(stat, "S_IRUSR") and hasattr(stat, "S_IWUSR"):
         try:
             os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 0600
         except OSError as e:
             import warnings
-            warnings.warn(
-                f"Could not set restrictive permissions on key file: {e}",
-                UserWarning
-            )
+
+            warnings.warn(f"Could not set restrictive permissions on key file: {e}", UserWarning)
 
     # Windows systems
-    elif os.name == 'nt':
+    elif os.name == "nt":
         try:
             import subprocess
+
             # Use icacls to restrict access to current user only
-            user = os.environ.get('USERNAME', os.environ.get('USER', ''))
+            user = os.environ.get("USERNAME", os.environ.get("USER", ""))
             if user:
                 subprocess.run(
-                    ['icacls', str(path), '/inheritance:r', '/grant:r', f'{user}:F'],
+                    ["icacls", str(path), "/inheritance:r", "/grant:r", f"{user}:F"],
                     check=False,
-                    capture_output=True
+                    capture_output=True,
                 )
         except Exception as e:
             import warnings
-            warnings.warn(
-                f"Could not set restrictive permissions on key file: {e}",
-                UserWarning
-            )
+
+            warnings.warn(f"Could not set restrictive permissions on key file: {e}", UserWarning)
