@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.abspath("../.."))
 
 # Import version from package
-from dextr.version import __version__
+from dextr.version import __version__  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information

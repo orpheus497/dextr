@@ -20,11 +20,11 @@ import sys
 from pathlib import Path
 
 from dextr import (
+    check_archive_integrity,
+    decrypt_archive,
+    encrypt_paths,
     generate_key_file,
     load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-    check_archive_integrity,
 )
 
 
@@ -79,16 +79,16 @@ def cmd_send(args):
     print("\n" + "=" * 60)
     print("NEXT STEPS:")
     print("=" * 60)
-    print(f"\n1. Send the encrypted archive to receiver:")
+    print("\n1. Send the encrypted archive to receiver:")
     print(f"   {archive_path}")
-    print(f"\n2. Send the encryption key through a SECURE channel:")
+    print("\n2. Send the encryption key through a SECURE channel:")
     print(f"   {key_path}")
-    print(f"\n3. Recommended secure channels:")
+    print("\n3. Recommended secure channels:")
     print("   - Encrypted messaging (Signal, Wire)")
     print("   - PGP/GPG encrypted email")
     print("   - Password-protected file sharing")
     print("   - In-person transfer (USB drive)")
-    print(f"\n⚠ WARNING: Do NOT send key and archive through same channel!")
+    print("\n⚠ WARNING: Do NOT send key and archive through same channel!")
     print("=" * 60)
 
 
@@ -106,9 +106,7 @@ def cmd_receive(args):
     key_path = Path(args.key if args.key else "transfer_key.dxk")
     if not key_path.exists():
         print(f"Error: Key file not found: {key_path}")
-        print(
-            "\nPlease obtain the key file from sender through a secure channel"
-        )
+        print("\nPlease obtain the key file from sender through a secure channel")
         sys.exit(1)
 
     print(f"1. Loading encryption key: {key_path}")
@@ -158,7 +156,7 @@ def cmd_receive(args):
     print("TRANSFER COMPLETE")
     print("=" * 60)
     print(f"\nFiles decrypted to: {output_dir.absolute()}")
-    print(f"\nSecurity recommendations:")
+    print("\nSecurity recommendations:")
     print("1. Verify files are as expected")
     print("2. Securely delete the key file after extraction")
     print("3. Optionally delete the encrypted archive")
@@ -167,9 +165,7 @@ def cmd_receive(args):
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(
-        description="Secure file transfer using dextr encryption"
-    )
+    parser = argparse.ArgumentParser(description="Secure file transfer using dextr encryption")
     subparsers = parser.add_subparsers(dest="command", help="Command")
 
     # Send command

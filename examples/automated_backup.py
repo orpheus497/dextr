@@ -23,26 +23,21 @@ from datetime import datetime
 from pathlib import Path
 
 from dextr import (
+    check_archive_integrity,
+    encrypt_paths,
     generate_key_file,
     load_key_file,
-    encrypt_paths,
-    check_archive_integrity,
 )
 from dextr.key_protection import prompt_password
 
-
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def parse_args():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Automated backup script using dextr encryption"
-    )
+    parser = argparse.ArgumentParser(description="Automated backup script using dextr encryption")
     parser.add_argument("paths", nargs="+", help="Paths to backup (files/directories)")
     parser.add_argument(
         "-o",
@@ -56,9 +51,7 @@ def parse_args():
         help="Encryption key file (default: generate new key)",
         default=None,
     )
-    parser.add_argument(
-        "--password", action="store_true", help="Use password-protected key"
-    )
+    parser.add_argument("--password", action="store_true", help="Use password-protected key")
     parser.add_argument(
         "--verify",
         action="store_true",

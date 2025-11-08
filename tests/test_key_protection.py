@@ -27,7 +27,7 @@ class TestPasswordProtection:
         metadata = generate_key_file(str(key_path), password=password)
 
         assert key_path.exists()
-        assert metadata['key_id'] is not None
+        assert metadata["key_id"] is not None
 
     def test_load_password_protected_key(self, password_protected_key):
         """Test loading a password-protected key file."""
@@ -37,7 +37,7 @@ class TestPasswordProtection:
         loaded_key, loaded_metadata = load_key_file(key_path, password=password)
 
         assert loaded_key == master_key
-        assert loaded_metadata['key_id'] == metadata['key_id']
+        assert loaded_metadata["key_id"] == metadata["key_id"]
 
     def test_load_without_password_fails(self, password_protected_key):
         """Test loading password-protected key without password fails."""
@@ -86,9 +86,10 @@ class TestPasswordProtection:
 
         # Load and check
         import json
-        with open(regular_key_path, 'r') as f:
+
+        with open(regular_key_path, "r") as f:
             regular_data = json.load(f)
-        with open(protected_key_path, 'r') as f:
+        with open(protected_key_path, "r") as f:
             protected_data = json.load(f)
 
         assert not is_password_protected(regular_data)
@@ -117,7 +118,7 @@ class TestPasswordFileReading:
         loaded_password = read_password_from_file(str(password_file))
 
         assert loaded_password == password
-        assert '\n' not in loaded_password
+        assert "\n" not in loaded_password
 
     def test_read_password_from_nonexistent_file(self, temp_dir):
         """Test reading from nonexistent file fails."""
@@ -140,29 +141,29 @@ class TestPasswordStrength:
         """Test weak password detection."""
         strength = get_password_strength("password")
 
-        assert strength['strength'] == 'weak'
-        assert strength['length'] == 8
-        assert strength['score'] < 40
+        assert strength["strength"] == "weak"
+        assert strength["length"] == 8
+        assert strength["score"] < 40
 
     def test_medium_password(self):
         """Test medium strength password."""
         strength = get_password_strength("Password123")
 
-        assert strength['strength'] in ['medium', 'strong']
-        assert strength['has_upper'] is True
-        assert strength['has_lower'] is True
-        assert strength['has_digits'] is True
+        assert strength["strength"] in ["medium", "strong"]
+        assert strength["has_upper"] is True
+        assert strength["has_lower"] is True
+        assert strength["has_digits"] is True
 
     def test_strong_password(self):
         """Test strong password detection."""
         strength = get_password_strength("MyVery$ecureP@ssw0rd2024!")
 
-        assert strength['strength'] == 'strong'
-        assert strength['score'] >= 70
-        assert strength['has_upper'] is True
-        assert strength['has_lower'] is True
-        assert strength['has_digits'] is True
-        assert strength['has_special'] is True
+        assert strength["strength"] == "strong"
+        assert strength["score"] >= 70
+        assert strength["has_upper"] is True
+        assert strength["has_lower"] is True
+        assert strength["has_digits"] is True
+        assert strength["has_special"] is True
 
     def test_password_length_scoring(self):
         """Test that longer passwords score higher."""
@@ -170,7 +171,7 @@ class TestPasswordStrength:
         medium = get_password_strength("Password123!")
         long = get_password_strength("VeryLongPassword123!")
 
-        assert short['score'] < medium['score'] < long['score']
+        assert short["score"] < medium["score"] < long["score"]
 
 
 class TestPasswordProtectedOperations:
@@ -240,9 +241,9 @@ class TestPasswordSecurity:
         generate_key_file(str(key2_path), password=password)
 
         # Read encrypted data
-        with open(key1_path, 'rb') as f:
+        with open(key1_path, "rb") as f:
             data1 = f.read()
-        with open(key2_path, 'rb') as f:
+        with open(key2_path, "rb") as f:
             data2 = f.read()
 
         # Encrypted data should be different (different salts)

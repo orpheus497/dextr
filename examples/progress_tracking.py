@@ -17,8 +17,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from dextr import generate_key_file, load_key_file, encrypt_paths, decrypt_archive
-
+from dextr import decrypt_archive, encrypt_paths, generate_key_file, load_key_file
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,13 +49,10 @@ class ProgressTracker:
             percentage = (current / total * 100) if total > 0 else 0
             if filename:
                 print(
-                    f"{self.name}: {percentage:.1f}% - {filename} "
-                    f"({current:,}/{total:,} bytes)"
+                    f"{self.name}: {percentage:.1f}% - {filename} " f"({current:,}/{total:,} bytes)"
                 )
             else:
-                print(
-                    f"{self.name}: {percentage:.1f}% ({current:,}/{total:,} bytes)"
-                )
+                print(f"{self.name}: {percentage:.1f}% ({current:,}/{total:,} bytes)")
 
     def complete(self):
         """Mark operation as complete."""
@@ -78,9 +74,7 @@ class LoggingProgressTracker:
 
         # Log every 10% increment
         if int(percentage / 10) > int(self.last_percentage / 10):
-            self.logger.info(
-                f"Progress: {percentage:.0f}% ({current:,}/{total:,} bytes)"
-            )
+            self.logger.info(f"Progress: {percentage:.0f}% ({current:,}/{total:,} bytes)")
 
         if filename:
             self.logger.debug(f"Processing: {filename}")
@@ -115,9 +109,7 @@ class SilentProgressTracker:
             "current": self.current_bytes,
             "total": self.total_bytes,
             "percentage": (
-                (self.current_bytes / self.total_bytes * 100)
-                if self.total_bytes > 0
-                else 0
+                (self.current_bytes / self.total_bytes * 100) if self.total_bytes > 0 else 0
             ),
             "completed": self.completed,
         }

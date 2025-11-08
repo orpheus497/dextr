@@ -30,17 +30,17 @@ class TestKeyGeneration:
         metadata = generate_key_file(str(key_path))
 
         assert key_path.exists()
-        assert metadata['magic'] == 'DEXTR_KEY'
-        assert 'key_id' in metadata
-        assert 'created_at' in metadata
-        assert 'created_by' in metadata
+        assert metadata["magic"] == "DEXTR_KEY"
+        assert "key_id" in metadata
+        assert "created_at" in metadata
+        assert "created_by" in metadata
 
     def test_load_key(self, test_key):
         """Test loading a generated key."""
         key_path, master_key, metadata = test_key
 
         assert len(master_key) == 64  # 512 bits
-        assert metadata['magic'] == 'DEXTR_KEY'
+        assert metadata["magic"] == "DEXTR_KEY"
 
     def test_key_id_consistency(self, test_key):
         """Test that key ID is consistent across loads."""
@@ -48,7 +48,7 @@ class TestKeyGeneration:
         master_key2, metadata2 = load_key_file(key_path)
 
         assert master_key1 == master_key2
-        assert metadata1['key_id'] == metadata2['key_id']
+        assert metadata1["key_id"] == metadata2["key_id"]
 
     def test_overwrite_protection(self, temp_dir):
         """Test that existing keys aren't overwritten without force."""
@@ -190,16 +190,16 @@ class TestArchiveInfo:
 
         info = get_archive_info(archive_path)
 
-        assert 'format_version' in info
-        assert 'key_id' in info
-        assert 'salt' in info
-        assert 'file_size' in info
-        assert 'encrypted_size' in info
+        assert "format_version" in info
+        assert "key_id" in info
+        assert "salt" in info
+        assert "file_size" in info
+        assert "encrypted_size" in info
 
     def test_archive_info_invalid_file(self, temp_dir):
         """Test get_archive_info on invalid file."""
         bad_archive = temp_dir / "bad.dxe"
-        bad_archive.write_bytes(b'not a valid archive')
+        bad_archive.write_bytes(b"not a valid archive")
 
         with pytest.raises(DecryptionError):
             get_archive_info(str(bad_archive))
@@ -214,11 +214,11 @@ class TestIntegrityCheck:
 
         result = check_archive_integrity(archive_path, master_key, quick=False)
 
-        assert result['valid'] is True
-        assert result['header_valid'] is True
-        assert result['key_match'] is True
-        assert result['decrypt_success'] is True
-        assert result['full_decrypt_success'] is True
+        assert result["valid"] is True
+        assert result["header_valid"] is True
+        assert result["key_match"] is True
+        assert result["decrypt_success"] is True
+        assert result["full_decrypt_success"] is True
 
     def test_integrity_check_quick(self, test_archive):
         """Test quick integrity check."""
@@ -226,10 +226,10 @@ class TestIntegrityCheck:
 
         result = check_archive_integrity(archive_path, master_key, quick=True)
 
-        assert result['valid'] is True
-        assert result['header_valid'] is True
-        assert result['key_match'] is True
-        assert result['decrypt_success'] is True
+        assert result["valid"] is True
+        assert result["header_valid"] is True
+        assert result["key_match"] is True
+        assert result["decrypt_success"] is True
 
     def test_integrity_check_wrong_key(self, temp_dir, test_archive):
         """Test integrity check with wrong key."""
@@ -242,22 +242,22 @@ class TestIntegrityCheck:
 
         result = check_archive_integrity(archive_path, wrong_key, quick=False)
 
-        assert result['valid'] is False
-        assert result['key_match'] is False
+        assert result["valid"] is False
+        assert result["key_match"] is False
 
     def test_integrity_check_corrupted(self, temp_dir, test_archive):
         """Test integrity check on corrupted archive."""
         archive_path, _, master_key, _ = test_archive
 
         # Corrupt the archive
-        with open(archive_path, 'r+b') as f:
+        with open(archive_path, "r+b") as f:
             f.seek(100)
-            f.write(b'\x00\x00\x00\x00')
+            f.write(b"\x00\x00\x00\x00")
 
         result = check_archive_integrity(archive_path, master_key, quick=False)
 
-        assert result['valid'] is False
-        assert result['error'] is not None
+        assert result["valid"] is False
+        assert result["error"] is not None
 
 
 class TestEdgeCases:
