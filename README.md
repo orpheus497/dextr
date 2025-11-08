@@ -272,8 +272,10 @@ from dextr import (
     decrypt_archive,
     DextrError,
     KeyManagementError,
+    ArchivingError,
     EncryptionError,
-    DecryptionError
+    DecryptionError,
+    ValidationError
 )
 
 # Generate a new key file
@@ -295,7 +297,7 @@ try:
         master_key
     )
     print("Encryption successful")
-except (ArchivingError, EncryptionError) as e:
+except (ValidationError, ArchivingError, EncryptionError) as e:
     print(f"Encryption failed: {e}")
 
 # Decrypt archive
@@ -348,4 +350,3 @@ All dextr exceptions inherit from `DextrError`:
 - **Core Cryptography**: The [cryptography](https://github.com/pyca/cryptography) library, which is licensed under the dual Apache-2.0 and BSD licenses.
 
 This project is provided as-is. While it is built with modern, secure cryptographic primitives, no warranty is provided. Always maintain backups of your original data.
-# dextr

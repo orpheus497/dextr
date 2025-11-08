@@ -16,7 +16,7 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
 
 setup(
     name='dextr',
-    version='1.1.0',
+    version='1.2.0',
     description='Secure archiving and encryption system with multi-layer AEAD protection',
     long_description=long_description,
     long_description_content_type='text/markdown',
