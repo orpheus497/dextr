@@ -49,16 +49,16 @@ detect_os() {
 # Check Python installation
 check_python() {
     print_info "Checking Python installation..."
-    
+
     if command -v python3 &> /dev/null; then
         PYTHON_CMD="python3"
         PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
         print_success "Found Python $PYTHON_VERSION"
-        
+
         # Check if version is 3.7+
         MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
         MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
-        
+
         if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 7 ]; then
             return 0
         else
@@ -68,11 +68,11 @@ check_python() {
     elif command -v python &> /dev/null; then
         PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
         MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
-        
+
         if [ "$MAJOR" -eq 3 ]; then
             PYTHON_CMD="python"
             print_success "Found Python $PYTHON_VERSION"
-            
+
             MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
             if [ "$MINOR" -ge 7 ]; then
                 return 0
@@ -93,7 +93,7 @@ check_python() {
 # Check pip installation
 check_pip() {
     print_info "Checking pip installation..."
-    
+
     if $PYTHON_CMD -m pip --version &> /dev/null; then
         print_success "pip is installed"
         return 0
@@ -106,7 +106,7 @@ check_pip() {
 # Install dependencies
 install_dependencies() {
     print_info "Installing dependencies..."
-    
+
     if $PYTHON_CMD -m pip install --user -r requirements.txt; then
         print_success "Dependencies installed successfully"
         return 0
@@ -126,7 +126,7 @@ install_dextr() {
     echo "  4) Skip installation (just install dependencies)"
     echo ""
     read -p "Enter choice [1-4]: " choice
-    
+
     case $choice in
         1)
             print_info "Installing dextr system-wide..."
@@ -183,7 +183,7 @@ make_executable() {
 # Test installation
 test_installation() {
     print_info "Testing installation..."
-    
+
     if [ "$INSTALL_METHOD" = "none" ]; then
         if ./run.sh --version &> /dev/null; then
             print_success "Direct execution works: ./run.sh --version"
@@ -206,7 +206,7 @@ test_installation() {
             print_error "dextr command not found in PATH"
             echo ""
             echo "You may need to add the installation directory to your PATH:"
-            
+
             OS=$(detect_os)
             if [ "$OS" = "linux" ] || [ "$OS" = "termux" ]; then
                 echo "  Linux/Termux: export PATH=\"\$HOME/.local/bin:\$PATH\""
@@ -215,7 +215,7 @@ test_installation() {
                 echo "  macOS: export PATH=\"\$HOME/Library/Python/*/bin:\$PATH\""
                 echo "  Add to ~/.bash_profile or ~/.zshrc to make permanent"
             fi
-            
+
             echo ""
             echo "Alternatively, you can use: ./run.sh [command]"
             return 1
@@ -230,14 +230,14 @@ show_usage() {
     echo "║           Installation Complete!                 ║"
     echo "╚══════════════════════════════════════════════════╝"
     echo ""
-    
+
     if [ "$INSTALL_METHOD" = "none" ]; then
         echo "Usage: ./run.sh [command]"
     else
         echo "Usage: dextr [command]"
         echo "   or: ./run.sh [command]"
     fi
-    
+
     echo ""
     echo "Quick Start:"
     echo "  1. Generate a key:    dextr generate"
@@ -259,7 +259,7 @@ main() {
     OS=$(detect_os)
     print_info "Detected OS: $OS"
     echo ""
-    
+
     # Check Python
     if ! check_python; then
         echo ""
@@ -276,9 +276,9 @@ main() {
         fi
         exit 1
     fi
-    
+
     echo ""
-    
+
     # Check pip
     if ! check_pip; then
         echo ""
@@ -293,35 +293,35 @@ main() {
         fi
         exit 1
     fi
-    
+
     echo ""
-    
+
     # Install dependencies
     if ! install_dependencies; then
         echo ""
         print_error "Failed to install dependencies"
         exit 1
     fi
-    
+
     echo ""
-    
+
     # Make scripts executable
     make_executable
-    
+
     echo ""
-    
+
     # Install dextr
     if ! install_dextr; then
         echo ""
         print_error "Installation incomplete, but you can still use: ./run.sh [command]"
         exit 1
     fi
-    
+
     echo ""
-    
+
     # Test installation
     test_installation
-    
+
     # Show usage
     show_usage
 }

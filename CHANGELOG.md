@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-08
+
 ### Added
 - **Shell Completion Scripts:** Bash, Zsh, and Fish completion scripts for improved CLI usability with tab completion for commands, options, and file paths
 - **Pre-commit Hooks Configuration:** Automated code quality checks using black, isort, flake8, mypy, and bandit before commits
