@@ -11,11 +11,11 @@ import tempfile
 from pathlib import Path
 
 from dextr import (
-    generate_key_file,
-    load_key_file,
-    encrypt_paths,
     decrypt_archive,
+    encrypt_paths,
+    generate_key_file,
     get_archive_info,
+    load_key_file,
 )
 
 
@@ -83,9 +83,7 @@ def main():
         archive_path = temp_path / "batch_archive.dxe"
 
         # Count total files
-        total_files = sum(
-            1 for loc in locations for _ in Path(loc).rglob("*") if Path(_).is_file()
-        )
+        total_files = sum(1 for loc in locations for _ in Path(loc).rglob("*") if Path(_).is_file())
 
         encrypt_paths(locations, str(archive_path), master_key)
 

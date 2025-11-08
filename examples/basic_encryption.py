@@ -14,11 +14,11 @@ import tempfile
 from pathlib import Path
 
 from dextr import (
+    check_archive_integrity,
+    decrypt_archive,
+    encrypt_paths,
     generate_key_file,
     load_key_file,
-    encrypt_paths,
-    decrypt_archive,
-    check_archive_integrity,
 )
 
 
@@ -65,7 +65,7 @@ def main():
         print("\n4. Checking archive integrity...")
         result = check_archive_integrity(str(archive_path), master_key, quick=True)
 
-        if result['valid']:
+        if result["valid"]:
             print("   ✓ Archive integrity: VALID")
             print(f"   ✓ Encryption layers: {result['layers_validated']}")
         else:
