@@ -48,7 +48,7 @@ def cmd_send(args):
     master_key, _ = load_key_file(str(key_path))
 
     print(f"   ✓ Key ID: {metadata['key_id'][:16]}...")
-    print(f"   ✓ Created: {metadata['created']}")
+    print(f"   ✓ Created: {metadata['created_at']}")
 
     # Encrypt files
     print(f"\n2. Encrypting files to: {archive_path}")
@@ -63,7 +63,7 @@ def cmd_send(args):
     # Export key information (without actual key material)
     export_data = {
         "key_id": metadata["key_id"],
-        "created": metadata["created"],
+        "created": metadata["created_at"],
         "key_file": str(key_path),
         "archive_file": str(archive_path),
         "instructions": "Share the key file securely (encrypted email, secure messaging, etc.)",
@@ -113,7 +113,7 @@ def cmd_receive(args):
     try:
         master_key, metadata = load_key_file(str(key_path))
         print(f"   ✓ Key ID: {metadata['key_id'][:16]}...")
-        print(f"   ✓ Created: {metadata['created']}")
+        print(f"   ✓ Created: {metadata['created_at']}")
     except Exception as e:
         print(f"   ✗ Failed to load key: {e}")
         sys.exit(1)

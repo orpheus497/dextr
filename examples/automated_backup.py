@@ -187,7 +187,9 @@ def main():
             result = check_archive_integrity(str(archive_path), master_key, quick=False)
             if result["valid"]:
                 logger.info("✓ Archive integrity verified")
-                logger.info(f"✓ Validated {result['layers_validated']} encryption layers")
+                logger.info(f"✓ Header valid: {result['header_valid']}")
+                logger.info(f"✓ Key match: {result['key_match']}")
+                logger.info(f"✓ Full decrypt success: {result['full_decrypt_success']}")
             else:
                 logger.error("✗ Archive integrity check failed")
                 sys.exit(1)

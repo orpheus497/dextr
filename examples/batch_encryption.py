@@ -94,10 +94,10 @@ def main():
         # 4. View archive information
         print("\n4. Archive information:")
         info = get_archive_info(str(archive_path))
-        print(f"   - Created: {info['created']}")
-        print(f"   - Encryption: {info['encryption_algorithm']}")
-        print(f"   - Compression: {info['compression_algorithm']}")
-        print(f"   - Layers: {info['encryption_layers']}")
+        print(f"   - Format version: {info['format_version']}")
+        print(f"   - Key ID: {info['key_id'][:16]}...")
+        print(f"   - File size: {info['file_size']:,} bytes")
+        print(f"   - Encrypted size: {info['encrypted_size']:,} bytes")
 
         # 5. Decrypt to restore all locations
         print("\n5. Decrypting archive...")
