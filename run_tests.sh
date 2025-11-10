@@ -1,14 +1,24 @@
 #!/bin/bash
 # Test runner script for debugging
 
+# Try to find Python (prefer python3)
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+    PYTHON=python
+else
+    echo "Error: Python 3.7+ is required but not found in PATH" >&2
+    exit 1
+fi
+
 echo "=== Running dextr tests ==="
-echo "Python: $(python --version)"
-echo "Pytest: $(python -m pytest --version)"
+echo "Python: $($PYTHON --version)"
+echo "Pytest: $($PYTHON -m pytest --version 2>&1 || echo 'NOT INSTALLED')"
 echo "Working directory: $(pwd)"
 echo
 
 # Run tests
-python -m pytest tests/ -v --tb=short
+$PYTHON -m pytest tests/ -v --tb=short
 
 # Check exit code
 if [ $? -eq 0 ]; then

@@ -5,7 +5,7 @@
 set -e  # Exit on error
 
 echo "╔══════════════════════════════════════════════════╗"
-echo "║        dextr Installation Script v1.0            ║"
+echo "║        dextr Installation Script v1.3.0          ║"
 echo "║    Secure Archiving & Encryption System          ║"
 echo "║          Created by orpheus497                   ║"
 echo "╚══════════════════════════════════════════════════╝"
@@ -55,14 +55,14 @@ check_python() {
         PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
         print_success "Found Python $PYTHON_VERSION"
 
-        # Check if version is 3.7+
+        # Check if version is 3.8+
         MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
         MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
 
-        if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 7 ]; then
+        if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 8 ]; then
             return 0
         else
-            print_error "Python 3.7+ is required (found $PYTHON_VERSION)"
+            print_error "Python 3.8+ is required (found $PYTHON_VERSION)"
             return 1
         fi
     elif command -v python &> /dev/null; then
@@ -74,14 +74,14 @@ check_python() {
             print_success "Found Python $PYTHON_VERSION"
 
             MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
-            if [ "$MINOR" -ge 7 ]; then
+            if [ "$MINOR" -ge 8 ]; then
                 return 0
             else
-                print_error "Python 3.7+ is required (found $PYTHON_VERSION)"
+                print_error "Python 3.8+ is required (found $PYTHON_VERSION)"
                 return 1
             fi
         else
-            print_error "Python 3.7+ is required (found Python $MAJOR)"
+            print_error "Python 3.8+ is required (found Python $MAJOR)"
             return 1
         fi
     else
@@ -263,7 +263,7 @@ main() {
     # Check Python
     if ! check_python; then
         echo ""
-        echo "Please install Python 3.7 or higher:"
+        echo "Please install Python 3.8 or higher:"
         if [ "$OS" = "linux" ]; then
             echo "  Ubuntu/Debian: sudo apt install python3 python3-pip"
             echo "  Fedora:        sudo dnf install python3 python3-pip"
