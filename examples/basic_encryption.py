@@ -67,7 +67,9 @@ def main():
 
         if result["valid"]:
             print("   ✓ Archive integrity: VALID")
-            print(f"   ✓ Encryption layers: {result['layers_validated']}")
+            print(f"   ✓ Header valid: {result['header_valid']}")
+            print(f"   ✓ Key match: {result['key_match']}")
+            print(f"   ✓ Decrypt success: {result['decrypt_success']}")
         else:
             print("   ✗ Archive integrity: INVALID")
 
