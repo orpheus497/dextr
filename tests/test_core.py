@@ -272,16 +272,26 @@ class TestEdgeCases:
             encrypt_paths([str(temp_dir / "doesnotexist.txt")], str(archive_path), master_key)
 
     def test_decrypt_to_existing_nonempty_dir(self, temp_dir, test_archive):
-        """Test decrypting to non-empty directory fails without force."""
+        """Test decrypting to non-empty directory succeeds (files coexist)."""
         archive_path, _, master_key, _ = test_archive
         output_dir = temp_dir / "nonempty"
         output_dir.mkdir()
-        (output_dir / "existing.txt").write_text("existing file")
 
-        # Should fail without force flag
-        # Note: This test assumes the decrypt_archive function checks for non-empty dirs
-        # The actual behavior depends on implementation
-        pass  # Placeholder for actual test
+        # Create an existing file in the directory
+        existing_file = output_dir / "existing.txt"
+        existing_file.write_text("existing file content")
+
+        # Decrypt should succeed - extracted files coexist with existing files
+        decrypt_archive(str(archive_path), str(output_dir), master_key)
+
+        # Verify existing file is still there
+        assert existing_file.exists()
+        assert existing_file.read_text() == "existing file content"
+
+        # Verify archived files were extracted (test_archive contains test files)
+        # There should be more than just the existing file
+        files_in_dir = list(output_dir.iterdir())
+        assert len(files_in_dir) > 1
 
     def test_unicode_filenames(self, temp_dir, test_key, unicode_filename):
         """Test handling of unicode filenames."""
