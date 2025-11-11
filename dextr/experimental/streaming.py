@@ -22,13 +22,17 @@ For production use, always use the standard (non-streaming) functions:
 - dextr.core.encrypt_paths()
 - dextr.core.decrypt_archive()
 
-TODO (for future versions):
-- Complete and optimize stream_decrypt_layer chunk boundary detection
-- Implement comprehensive path validation and security checks
-- Add extensive test coverage
-- Conduct security audit
-- Benchmark and optimize performance
-- Integrate with core.py if deemed production-ready
+**Technical Status:**
+- All functions have complete implementations (no placeholders or stubs)
+- Path validation and security checks are implemented
+- Chunk boundary detection is functional but unoptimized
+
+**Why This Module is Deprecated:**
+- Insufficient test coverage for production use
+- Performance not benchmarked or optimized
+- No comprehensive security audit conducted
+- Stream_decrypt_layer has inefficient boundary detection algorithm
+- May be completed in version 2.0 or removed entirely
 """
 
 import os
