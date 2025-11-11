@@ -70,6 +70,22 @@ from dextr.key_protection import (
     read_password_from_file,
 )
 
+# Import archive utilities
+from dextr.archive_utils import (
+    compare_archives,
+    get_archive_file_list,
+    merge_archives,
+    rekey_archive,
+)
+
+# Import key rotation utilities
+from dextr.key_rotation import (
+    batch_rotate_keys,
+    create_rotation_report,
+    rotate_archive_key,
+    verify_rotation,
+)
+
 # Define public API
 __all__ = [
     # Version info
@@ -77,7 +93,7 @@ __all__ = [
     "__version_info__",
     "__author__",
     "__license__",
-    # Functions
+    # Core functions
     "generate_key_file",
     "load_key_file",
     "encrypt_paths",
@@ -91,6 +107,16 @@ __all__ = [
     "prompt_password",
     "read_password_from_file",
     "get_password_strength",
+    # Archive utilities
+    "compare_archives",
+    "merge_archives",
+    "rekey_archive",
+    "get_archive_file_list",
+    # Key rotation
+    "rotate_archive_key",
+    "batch_rotate_keys",
+    "verify_rotation",
+    "create_rotation_report",
     # Exceptions
     "DextrError",
     "KeyManagementError",
