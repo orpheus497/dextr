@@ -9,31 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Archive Utilities Module:** New `dextr/archive_utils.py` with comprehensive archive manipulation functions including comparison, merging, and re-encryption capabilities
-- **Archive Comparison Command:** `dextr compare` command to compare contents of two encrypted archives without full extraction
-- **Archive Merging Command:** `dextr merge` command to combine multiple archives into a single encrypted archive
-- **Archive Re-encryption Command:** `dextr rekey` command to re-encrypt archives with different encryption keys
-- **Archive Metadata Command:** `dextr metadata` command to view and manipulate custom archive metadata and tags
-- **Key Rotation Utilities:** New `dextr/key_rotation.py` module with functions for rotating encryption keys on existing archives
-- **Batch Operations Module:** New `dextr/batch.py` module enabling execution of multiple operations from batch files for automation
-- **Batch Command:** `dextr batch` command to execute multiple dextr operations from a batch configuration file
-- **Metadata System:** New `dextr/metadata.py` module providing archive tagging, custom metadata fields, and metadata search capabilities
-- **Configuration Wizard:** New `dextr/config_wizard.py` module with interactive configuration setup for new users
-- **Comprehensive Integration Tests:** Complete integration test suite in `tests/integration/` covering end-to-end workflows, CLI integration, large file handling, edge cases, and error recovery scenarios
-- **Performance Benchmarking Infrastructure:** New benchmarking suite in `tests/benchmarks/` for encryption speed, compression ratios, and large file performance testing
+- **Archive Comparison Command:** `dextr compare` CLI command to compare contents of two encrypted archives without full extraction, showing files unique to each archive and content differences
+- **Archive Merging Command:** `dextr merge` CLI command to combine multiple archives into a single encrypted archive with duplicate file handling
+- **Archive Re-encryption Command:** `dextr rekey` CLI command to re-encrypt archives with different encryption keys with automatic backup support
+- **Key Rotation Command:** `dextr rotate` CLI command for single and batch key rotation with verification and detailed reporting capabilities
+- **Key Rotation Utilities Module:** New `dextr/key_rotation.py` module with functions for rotating encryption keys on existing archives, batch rotation support, and rotation verification
 - **Type Marker File:** Added `dextr/py.typed` for PEP 561 compliance enabling type checking for library users
-- **Architecture Documentation:** New `docs/architecture.md` with system architecture diagrams and component documentation
-- **Performance Documentation:** New `docs/performance.md` documenting performance characteristics and optimization guidelines
-- **Advanced Usage Documentation:** New `docs/advanced_usage.md` with advanced use cases and integration patterns
-- **Additional Example Scripts:** Key rotation, batch operations, and metadata usage examples in `examples/` directory
+- **CLI Password Support:** Extended password support for all new commands including separate password prompts for old and new keys in rotation operations
 
 ### Changed
 - **Version Management:** Updated project version from 1.3.0 to 1.4.0 across all configuration files
-- **Progress Display Enhancement:** Improved progress callback with ETA calculation, speed indicators (MB/s), and detailed operation breakdown
-- **Type Hint Coverage:** Completed type annotations for all public functions across `dextr/config.py` and `dextr/cli.py` modules
-- **CLI Enhancement:** Extended CLI with support for new archive utility commands, batch operations, and metadata management
-- **Core Module Enhancement:** Extended `dextr/core.py` with archive comparison, merging, and metadata support functions
-- **API Exports:** Updated `dextr/__init__.py` to export new archive utilities, key rotation, batch operations, and metadata functions
-- **Version Consistency:** Enhanced `scripts/check_version.py` to validate version consistency across all project files including CHANGELOG.md entries
+- **CLI Enhancement:** Extended CLI module with four new command handlers (`cmd_compare`, `cmd_merge`, `cmd_rekey`, `cmd_rotate`) with full argument parsing and error handling
+- **CLI Imports:** Added imports for `archive_utils` and `key_rotation` modules to support new command functionality
+- **Command Routing:** Extended command routing logic to dispatch new compare, merge, rekey, and rotate commands to their respective handlers
+- **API Exports:** Updated `dextr/__init__.py` to export new archive utilities and key rotation functions for programmatic access
 
 ### Fixed
 - **Deprecated Module Removal:** Removed incomplete and deprecated `dextr/experimental/streaming.py` module to eliminate dead code from production distribution

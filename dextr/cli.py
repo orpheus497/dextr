@@ -21,6 +21,7 @@ try:
 except ImportError:
     HAS_TQDM = False
 
+from dextr.archive_utils import compare_archives, merge_archives, rekey_archive
 from dextr.config import get_max_archive_size, load_config
 from dextr.core import (
     check_archive_integrity,
@@ -39,6 +40,7 @@ from dextr.exceptions import (
     ValidationError,
 )
 from dextr.key_protection import get_password_strength, prompt_password, read_password_from_file
+from dextr.key_rotation import batch_rotate_keys, create_rotation_report, rotate_archive_key
 from dextr.logging_config import get_logger, setup_logging
 from dextr.version import __version__
 
@@ -564,6 +566,379 @@ def cmd_check(args: argparse.Namespace) -> int:
         error_exit(f"Unexpected error during integrity check: {e}")
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Handle the 'compare' command - compare two encrypted archives."""
+    archive1_path = args.archive1
+    archive2_path = args.archive2
+    key_path = args.key
+    key2_path = getattr(args, "key2", None)
+
+    # Validate archives exist
+    if not os.path.exists(archive1_path):
+        error_exit(f"Archive not found: {archive1_path}")
+    if not os.path.exists(archive2_path):
+        error_exit(f"Archive not found: {archive2_path}")
+    if not os.path.exists(key_path):
+        error_exit(f"Key file not found: {key_path}")
+    if key2_path and not os.path.exists(key2_path):
+        error_exit(f"Key file not found: {key2_path}")
+
+    # Get passwords if needed
+    password = get_password_from_args(args)
+    password2 = None
+    if key2_path and getattr(args, "password2", False):
+        try:
+            password2 = prompt_password("Enter password for second key: ")
+        except KeyManagementError as e:
+            error_exit(str(e))
+
+    try:
+        # Load keys
+        if not args.quiet:
+            print(f"[*] Loading key from '{key_path}'...")
+        key1, _ = load_key_file(key_path, password=password)
+
+        if key2_path:
+            if not args.quiet:
+                print(f"[*] Loading second key from '{key2_path}'...")
+            key2, _ = load_key_file(key2_path, password=password2)
+        else:
+            key2 = None
+
+        # Compare archives
+        if not args.quiet:
+            print(f"[*] Comparing archives...")
+
+        progress = ProgressCallback(quiet=args.quiet)
+        try:
+            result = compare_archives(
+                archive1_path,
+                archive2_path,
+                key1,
+                key2,
+                progress_callback=progress if not args.quiet else None,
+            )
+        finally:
+            progress.close()
+
+        # Display results
+        print(f"\nComparison Results:")
+        print("-" * 60)
+        print(f"  Archive 1: {archive1_path} ({result['total_files_1']} files)")
+        print(f"  Archive 2: {archive2_path} ({result['total_files_2']} files)")
+        print()
+
+        if result["identical"]:
+            print("[✓] Archives are IDENTICAL")
+        else:
+            print("[!] Archives are DIFFERENT")
+            print()
+
+            if result["files_only_in_1"]:
+                print(f"  Files only in archive 1: ({len(result['files_only_in_1'])})")
+                for file in result["files_only_in_1"][:10]:
+                    print(f"    - {file}")
+                if len(result["files_only_in_1"]) > 10:
+                    print(f"    ... and {len(result['files_only_in_1']) - 10} more")
+                print()
+
+            if result["files_only_in_2"]:
+                print(f"  Files only in archive 2: ({len(result['files_only_in_2'])})")
+                for file in result["files_only_in_2"][:10]:
+                    print(f"    - {file}")
+                if len(result["files_only_in_2"]) > 10:
+                    print(f"    ... and {len(result['files_only_in_2']) - 10} more")
+                print()
+
+            if result["files_different"]:
+                print(f"  Files with different content: ({len(result['files_different'])})")
+                for file in result["files_different"][:10]:
+                    print(f"    - {file}")
+                if len(result["files_different"]) > 10:
+                    print(f"    ... and {len(result['files_different']) - 10} more")
+                print()
+
+            if result["files_identical"]:
+                print(f"  Identical files: {len(result['files_identical'])}")
+
+        print("-" * 60)
+
+        return 0 if result["identical"] else 1
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except DecryptionError as e:
+        error_exit(f"Decryption error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error comparing archives: {e}")
+
+
+def cmd_merge(args: argparse.Namespace) -> int:
+    """Handle the 'merge' command - merge multiple encrypted archives."""
+    input_archives = args.input
+    output_archive = args.output
+    key_path = args.key
+    output_key_path = getattr(args, "output_key", None)
+
+    # Validate inputs
+    for archive in input_archives:
+        if not os.path.exists(archive):
+            error_exit(f"Archive not found: {archive}")
+
+    if not os.path.exists(key_path):
+        error_exit(f"Key file not found: {key_path}")
+
+    if output_key_path and not os.path.exists(output_key_path):
+        error_exit(f"Output key file not found: {output_key_path}")
+
+    if os.path.exists(output_archive) and not args.force:
+        error_exit(f"Output archive '{output_archive}' already exists. Use --force to overwrite.")
+
+    # Get passwords
+    password = get_password_from_args(args)
+    output_password = None
+    if output_key_path and getattr(args, "output_password", False):
+        try:
+            output_password = prompt_password("Enter password for output key: ")
+        except KeyManagementError as e:
+            error_exit(str(e))
+
+    try:
+        # Load keys
+        if not args.quiet:
+            print(f"[*] Loading key from '{key_path}'...")
+        input_key, _ = load_key_file(key_path, password=password)
+
+        if output_key_path:
+            if not args.quiet:
+                print(f"[*] Loading output key from '{output_key_path}'...")
+            output_key, _ = load_key_file(output_key_path, password=output_password)
+        else:
+            output_key = None
+
+        # Merge archives
+        if not args.quiet:
+            print(f"[*] Merging {len(input_archives)} archive(s)...")
+
+        progress = ProgressCallback(quiet=args.quiet)
+        try:
+            merge_archives(
+                input_archives,
+                output_archive,
+                input_key,
+                output_key,
+                progress_callback=progress if not args.quiet else None,
+            )
+        finally:
+            progress.close()
+
+        # Report success
+        output_size = os.path.getsize(output_archive)
+        print(f"Success: Merged archives to '{output_archive}'")
+        print(f"    Output size: {format_bytes(output_size)}")
+
+        return 0
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except (ArchivingError, EncryptionError, DecryptionError) as e:
+        error_exit(f"Merge error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error merging archives: {e}")
+
+
+def cmd_rekey(args: argparse.Namespace) -> int:
+    """Handle the 'rekey' command - re-encrypt archive with different key."""
+    input_archive = args.input
+    output_archive = getattr(args, "output", None)
+    old_key_path = args.old_key
+    new_key_path = args.new_key
+
+    # Validate inputs
+    if not os.path.exists(input_archive):
+        error_exit(f"Archive not found: {input_archive}")
+    if not os.path.exists(old_key_path):
+        error_exit(f"Old key file not found: {old_key_path}")
+    if not os.path.exists(new_key_path):
+        error_exit(f"New key file not found: {new_key_path}")
+
+    if output_archive and os.path.exists(output_archive) and not args.force:
+        error_exit(f"Output archive '{output_archive}' already exists. Use --force to overwrite.")
+
+    # Get passwords
+    old_password = None
+    new_password = None
+    if getattr(args, "old_password", False):
+        try:
+            old_password = prompt_password("Enter password for old key: ")
+        except KeyManagementError as e:
+            error_exit(str(e))
+    if getattr(args, "new_password", False):
+        try:
+            new_password = prompt_password("Enter password for new key: ")
+        except KeyManagementError as e:
+            error_exit(str(e))
+
+    try:
+        # Load keys
+        if not args.quiet:
+            print(f"[*] Loading old key from '{old_key_path}'...")
+        old_key, _ = load_key_file(old_key_path, password=old_password)
+
+        if not args.quiet:
+            print(f"[*] Loading new key from '{new_key_path}'...")
+        new_key, _ = load_key_file(new_key_path, password=new_password)
+
+        # Re-encrypt archive
+        if not args.quiet:
+            print(f"[*] Re-encrypting archive with new key...")
+
+        progress = ProgressCallback(quiet=args.quiet)
+        try:
+            rekey_archive(
+                input_archive,
+                output_archive if output_archive else input_archive + ".tmp",
+                old_key,
+                new_key,
+                progress_callback=progress if not args.quiet else None,
+            )
+        finally:
+            progress.close()
+
+        # Handle in-place re-encryption
+        if not output_archive:
+            backup_path = input_archive + ".backup"
+            import shutil
+            shutil.move(input_archive, backup_path)
+            shutil.move(input_archive + ".tmp", input_archive)
+            print(f"Success: Archive re-encrypted (backup at '{backup_path}')")
+        else:
+            output_size = os.path.getsize(output_archive)
+            print(f"Success: Archive re-encrypted to '{output_archive}'")
+            print(f"    Output size: {format_bytes(output_size)}")
+
+        return 0
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except (DecryptionError, EncryptionError) as e:
+        error_exit(f"Re-encryption error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error re-encrypting archive: {e}")
+
+
+def cmd_rotate(args: argparse.Namespace) -> int:
+    """Handle the 'rotate' command - rotate encryption keys for archives."""
+    archives = args.archives
+    old_key_path = args.old_key
+    new_key_path = args.new_key
+    batch_mode = len(archives) > 1
+    verify = not getattr(args, "no_verify", False)
+    report_file = getattr(args, "report", None)
+
+    # Validate inputs
+    for archive in archives:
+        if not os.path.exists(archive):
+            error_exit(f"Archive not found: {archive}")
+
+    if not os.path.exists(old_key_path):
+        error_exit(f"Old key file not found: {old_key_path}")
+    if not os.path.exists(new_key_path):
+        error_exit(f"New key file not found: {new_key_path}")
+
+    # Get passwords
+    old_password = get_password_from_args(args)
+    new_password = None
+    if getattr(args, "new_password", False):
+        try:
+            new_password = prompt_password("Enter password for new key: ")
+        except KeyManagementError as e:
+            error_exit(str(e))
+
+    try:
+        if batch_mode:
+            # Batch rotation
+            if not args.quiet:
+                print(f"[*] Rotating keys for {len(archives)} archive(s)...")
+
+            result = batch_rotate_keys(
+                archives,
+                old_key_path,
+                new_key_path,
+                in_place=True,
+                verify=verify,
+                stop_on_error=False,
+                old_key_password=old_password,
+                new_key_password=new_password,
+            )
+
+            # Display results
+            print(f"\nBatch Key Rotation Results:")
+            print("-" * 60)
+            print(f"  Total: {result['total']}")
+            print(f"  Successful: {result['successful']}")
+            print(f"  Failed: {result['failed']}")
+            print("-" * 60)
+
+            if result["failed"] > 0:
+                print("\nFailed archives:")
+                for archive_path, error_msg in result["errors"].items():
+                    print(f"  ✗ {archive_path}")
+                    print(f"    Error: {error_msg}")
+
+            # Generate report if requested
+            if report_file:
+                report = create_rotation_report(result, report_file)
+                print(f"\nDetailed report written to: {report_file}")
+
+            return 0 if result["failed"] == 0 else 1
+
+        else:
+            # Single archive rotation
+            archive = archives[0]
+
+            if not args.quiet:
+                print(f"[*] Rotating key for '{archive}'...")
+
+            progress = ProgressCallback(quiet=args.quiet)
+            try:
+                result = rotate_archive_key(
+                    archive,
+                    old_key_path,
+                    new_key_path,
+                    output_path=None,
+                    verify=verify,
+                    progress_callback=progress if not args.quiet else None,
+                    old_key_password=old_password,
+                    new_key_password=new_password,
+                )
+            finally:
+                progress.close()
+
+            print(f"Success: Key rotation complete")
+            if result.get("original_backed_up"):
+                print(f"    Backup: {result.get('backup_path')}")
+            if result.get("verification_passed"):
+                print(f"    Verification: PASSED")
+
+            return 0
+
+    except KeyManagementError as e:
+        error_exit(f"Key error: {e}")
+    except (DecryptionError, EncryptionError) as e:
+        error_exit(f"Key rotation error: {e}")
+    except DextrError as e:
+        error_exit(str(e))
+    except Exception as e:
+        error_exit(f"Unexpected error during key rotation: {e}")
+
+
 def cmd_help(args: argparse.Namespace) -> int:
     """Handle the 'help' command - show detailed usage guide."""
     topic = args.topic if hasattr(args, "topic") else None
@@ -894,6 +1269,138 @@ def main() -> int:
         help="Read password from file for password-protected keys",
     )
 
+    # Compare command
+    parser_compare = subparsers.add_parser("compare", help="Compare two encrypted archives")
+    parser_compare.add_argument(
+        "archive1", help="Path to first encrypted archive (.dxe)"
+    )
+    parser_compare.add_argument(
+        "archive2", help="Path to second encrypted archive (.dxe)"
+    )
+    parser_compare.add_argument(
+        "-k", "--key", required=True, help="Path to key file for first archive (.dxk)"
+    )
+    parser_compare.add_argument(
+        "--key2", help="Path to key file for second archive (default: use same key)"
+    )
+    parser_compare.add_argument("--quiet", action="store_true", help="Suppress status messages")
+    parser_compare.add_argument(
+        "--password",
+        action="store_true",
+        help="Prompt for password if key file is password-protected",
+    )
+    parser_compare.add_argument(
+        "--password-file",
+        metavar="FILE",
+        help="Read password from file for password-protected keys",
+    )
+    parser_compare.add_argument(
+        "--password2",
+        action="store_true",
+        help="Prompt for password for second key file",
+    )
+
+    # Merge command
+    parser_merge = subparsers.add_parser("merge", help="Merge multiple encrypted archives")
+    parser_merge.add_argument(
+        "-i", "--input", required=True, nargs="+", help="Input encrypted archives to merge"
+    )
+    parser_merge.add_argument(
+        "-o", "--output", required=True, help="Output path for merged archive (.dxe)"
+    )
+    parser_merge.add_argument(
+        "-k", "--key", required=True, help="Path to key file for input archives (.dxk)"
+    )
+    parser_merge.add_argument(
+        "--output-key", help="Path to key file for output archive (default: use same key)"
+    )
+    parser_merge.add_argument(
+        "--force", action="store_true", help="Overwrite output archive if it exists"
+    )
+    parser_merge.add_argument("--quiet", action="store_true", help="Suppress status messages")
+    parser_merge.add_argument(
+        "--password",
+        action="store_true",
+        help="Prompt for password if key file is password-protected",
+    )
+    parser_merge.add_argument(
+        "--password-file",
+        metavar="FILE",
+        help="Read password from file for password-protected keys",
+    )
+    parser_merge.add_argument(
+        "--output-password",
+        action="store_true",
+        help="Prompt for password for output key file",
+    )
+
+    # Rekey command
+    parser_rekey = subparsers.add_parser(
+        "rekey", help="Re-encrypt archive with a different key"
+    )
+    parser_rekey.add_argument(
+        "-i", "--input", required=True, help="Input encrypted archive (.dxe)"
+    )
+    parser_rekey.add_argument(
+        "-o", "--output", help="Output archive path (default: replace original with backup)"
+    )
+    parser_rekey.add_argument(
+        "--old-key", required=True, help="Path to current key file (.dxk)"
+    )
+    parser_rekey.add_argument(
+        "--new-key", required=True, help="Path to new key file (.dxk)"
+    )
+    parser_rekey.add_argument(
+        "--force", action="store_true", help="Overwrite output archive if it exists"
+    )
+    parser_rekey.add_argument("--quiet", action="store_true", help="Suppress status messages")
+    parser_rekey.add_argument(
+        "--old-password",
+        action="store_true",
+        help="Prompt for password for old key file",
+    )
+    parser_rekey.add_argument(
+        "--new-password",
+        action="store_true",
+        help="Prompt for password for new key file",
+    )
+
+    # Rotate command
+    parser_rotate = subparsers.add_parser(
+        "rotate", help="Rotate encryption keys for one or more archives"
+    )
+    parser_rotate.add_argument(
+        "archives", nargs="+", help="Archive(s) to rotate keys for (.dxe)"
+    )
+    parser_rotate.add_argument(
+        "--old-key", required=True, help="Path to current key file (.dxk)"
+    )
+    parser_rotate.add_argument(
+        "--new-key", required=True, help="Path to new key file (.dxk)"
+    )
+    parser_rotate.add_argument(
+        "--no-verify", action="store_true", help="Skip verification after rotation"
+    )
+    parser_rotate.add_argument(
+        "--report", metavar="FILE", help="Write detailed rotation report to file"
+    )
+    parser_rotate.add_argument("--quiet", action="store_true", help="Suppress status messages")
+    parser_rotate.add_argument(
+        "--password",
+        action="store_true",
+        help="Prompt for password for old key file",
+    )
+    parser_rotate.add_argument(
+        "--password-file",
+        metavar="FILE",
+        help="Read password from file for old key",
+    )
+    parser_rotate.add_argument(
+        "--new-password",
+        action="store_true",
+        help="Prompt for password for new key file",
+    )
+
     # Help command
     parser_help = subparsers.add_parser("help", help="Show detailed usage guide and examples")
     parser_help.add_argument(
@@ -937,6 +1444,14 @@ def main() -> int:
         return cmd_list(args)
     elif args.command == "check":
         return cmd_check(args)
+    elif args.command == "compare":
+        return cmd_compare(args)
+    elif args.command == "merge":
+        return cmd_merge(args)
+    elif args.command == "rekey":
+        return cmd_rekey(args)
+    elif args.command == "rotate":
+        return cmd_rotate(args)
     elif args.command == "help":
         return cmd_help(args)
     else:
